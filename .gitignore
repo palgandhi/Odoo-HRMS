@@ -1,23 +1,67 @@
-# OS
+# OS Files
 .DS_Store
+Thumbs.db
 
 # Python / Odoo
 __pycache__/
 *.py[cod]
 *$py.class
+*.so
+*.egg
+*.egg-info/
 venv/
+env/
 .env
 *.log
+*.pot
+*.pyc
 
-# Scripts (Local only)
+# Odoo specific
+filestore/
+sessions/
+addons/
+odoo.conf.local
 
-
-# Frontend
+# Frontend (React/Vite)
 node_modules/
 dist/
-.DS_Store
-.env.local
+dist-ssr/
+*.local
+.vite/
+.cache/
 
-# Editor
+# Environment
+.env
+.env.local
+.env.production
+
+# Editor / IDE
 .vscode/
 .idea/
+*.swp
+*.swo
+*~
+.project
+.classpath
+.settings/
+
+# Build
+build/
+*.min.js
+*.min.css
+
+# Logs
+logs/
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# Testing
+coverage/
+.nyc_output/
+
+# Misc
+.cache/
+temp/
+tmp/

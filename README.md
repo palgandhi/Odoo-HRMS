@@ -1,60 +1,310 @@
-# Dayflow HRMS
+# 🚀 Dayflow HRMS - Intelligent Human Resource Management System
 
-Dayflow is a headless Human Resource Management System validating the power of separating Odoo's robust backend from its traditional frontend. Built with **React** and **Odoo 17**, it delivers a modern, high-performance interface for managing complex HR workflows.
+[![Odoo](https://img.shields.io/badge/Odoo-17.0-purple?style=flat-square)](https://www.odoo.com/)
+[![React](https://img.shields.io/badge/React-18-blue?style=flat-square)](https://reactjs.org/)
+[![TypeScript](https://img.shields.io/badge/TypeScript-5.0-blue?style=flat-square)](https://www.typescriptlang.org/)
+[![License](https://img.shields.io/badge/License-MIT-green?style=flat-square)](LICENSE)
 
-![Status](https://img.shields.io/badge/Production-Ready-green)
-![Stack](https://img.shields.io/badge/React-Odoo%2017-blue)
+> A modern, intelligent HRMS built for the Odoo Hackathon 2026 with real-time notifications, advanced analytics, and a premium user experience.
 
-## Overview
+---
 
-Traditional ERP interfaces often suffer from strict templating systems. Dayflow bypasses this by leveraging Odoo purely as an API engine (JSON-RPC), allowing for a completely custom User Experience designed for speed and clarity.
+## ✨ Features
 
-Key differences from standard Odoo:
-*   **Zero Page Reloads:** Single Page Application (SPA) architecture.
-*   **Simplified Workflows:** Custom approval logic tailored for high-velocity teams.
-*   **Role-Aware UI:** Interfaces morph based on `base.group_user` vs `base.group_system` permissions.
+### 🎯 Core Features
+- ✅ **Employee Management** - Complete profile management with digital ID cards
+- ✅ **Attendance Tracking** - Check-in/out with mood tracking and team views
+- ✅ **Leave Management** - Request, approve, and track time-off with smart validation
+- ✅ **Payroll System** - Generate payslips with detailed breakdowns (INR)
+- ✅ **Performance Reviews** - Track and manage employee performance with ratings
 
-## Core Modules
+### 🚀 Advanced Features
+- 🔔 **Real-Time Notifications** - Auto-refreshing notifications with persistent read state
+- 📊 **Analytics Dashboard** - 5 interactive charts with time-range selection
+- 🎨 **Premium UI/UX** - Modern design with smooth animations and glassmorphism
+- 🇮🇳 **Indian Localization** - Currency in INR (₹), realistic Indian salaries
 
-### 👥 Employee Directory & RBAC
-Centralized profile management with strict hierarchy. Authenticated session handling connects physical employee records to system users seamlessly.
+---
 
-### 📍 Smart Attendance
-Geofence-ready check-in system with real-time status boards. Supports timezone normalization across distributed teams.
+## 🏗️ Architecture
 
-### 📅 Leave Management
-Dual-view interface for requests and approvals.
-*   **Employees:** Visual date pickers and status tracking.
-*   **Managers:** Batch approval queues.
+### Backend (Odoo 17)
+- **Framework**: Odoo 17 (Python)
+- **Database**: PostgreSQL
+- **API**: XML-RPC
+- **Custom Modules**:
+  - `dayflow_hrms` - Core HR functionality
+  - `dayflow_payroll` - Payroll management
+  - `dayflow_performance` - Performance reviews
 
-### 📈 Performance Reviews
-Custom module (`dayflow_performance`) extending standard HR capabilities. Features customizable review cycles, 5-point grading scales, and feedback loops.
+### Frontend (React + TypeScript)
+- **Framework**: React 18 with TypeScript
+- **Build Tool**: Vite
+- **Styling**: Tailwind CSS
+- **Animations**: Framer Motion
+- **Charts**: Recharts
+- **Icons**: Lucide React
 
-### 💰 Payroll
-Integrated payslip generation and history. Provides secure, private access for employees to view financial records.
+---
 
-## Architecture
+## 🚀 Quick Start
 
-*   **Frontend:** Vite, React 18, TypeScript, TailwindCSS.
-*   **Backend:** Odoo 17 Community Edition (Python).
-*   **Database:** PostgreSQL 15+.
-*   **Protocol:** JSON-RPC over HTTP.
+### Prerequisites
+- Python 3.11+
+- Node.js 18+
+- PostgreSQL 14+
+- Odoo 17
 
-## Development
+### Backend Setup
 
-The project includes a unified launcher for the full stack.
-
+1. **Install Odoo dependencies**:
 ```bash
-# Starts PostgreSQL, Odoo Backend (8069), and React Frontend (5173)
-./dev.sh
+pip install -r requirements.txt
 ```
 
-For direct database interaction via the Odoo shell:
-
+2. **Start Odoo server**:
 ```bash
-./shell.sh
+./odoo-bin -c odoo.conf
 ```
 
-## License
+3. **Access Odoo**:
+- URL: `http://localhost:8069`
+- Create database: `dayflow_db`
+- Install custom modules
 
-MIT
+### Frontend Setup
+
+1. **Install dependencies**:
+```bash
+cd dayflow-frontend
+npm install
+```
+
+2. **Start dev server**:
+```bash
+npm run dev
+```
+
+3. **Access app**:
+- URL: `http://localhost:5173`
+
+### Demo Data Setup
+
+```bash
+# Generate demo data (10 employees, attendance, payroll, etc.)
+python3 scripts/generate_demo_data.py
+
+# Add yourself as an employee
+python3 scripts/add_pal_gandhi.py
+```
+
+---
+
+## 👤 Demo Accounts
+
+### Admin Account
+- **Email**: `admin`
+- **Password**: `admin`
+- **Access**: Full system access
+
+### Employee Account
+- **Email**: `palgandhi@icloud.com`
+- **Password**: `password123`
+- **Access**: Employee features
+
+---
+
+## 📊 Demo Data
+
+The system includes realistic demo data:
+- **10 Employees** across 6 departments
+- **Attendance Records** - Last 7 days
+- **Payslips** - 3 months history (₹6.25L - ₹8.75L LPA)
+- **Performance Reviews** - Q4 2025 with ratings
+- **Leave Allocations** - 20 days per type
+- **Pending Leaves** - For notification testing
+
+---
+
+## 🎯 Key Highlights
+
+### 1. Real-Time Notifications 🔔
+- Auto-refresh every 30 seconds
+- Persistent read state (localStorage)
+- Priority-based sorting
+- Click-to-navigate
+- Role-based filtering (Manager vs Employee)
+
+### 2. Analytics Dashboard 📊
+- **Attendance Trend** - Area chart (7/30/90 days)
+- **Leave Distribution** - Pie chart by type
+- **Department Headcount** - Bar chart
+- **Top Performers** - Leaderboard with ratings
+- **Key Metrics** - Live employee count, salary, performance
+
+### 3. Premium UI/UX 🎨
+- Modern glassmorphism design
+- Smooth Framer Motion animations
+- Responsive layouts
+- Color-coded status indicators
+- Interactive charts
+
+### 4. Smart Features 🧠
+- Leave overlap validation
+- Automatic state transitions
+- Real-time data sync
+- Error handling with user-friendly messages
+
+---
+
+## 📁 Project Structure
+
+```
+dayflow/
+├── custom_addons/          # Odoo custom modules
+│   ├── dayflow_hrms/       # Core HR module
+│   ├── dayflow_payroll/    # Payroll module
+│   └── dayflow_performance/# Performance module
+├── dayflow-frontend/       # React frontend
+│   ├── src/
+│   │   ├── components/     # React components
+│   │   ├── services/       # API services
+│   │   └── App.tsx         # Main app
+│   └── package.json
+├── scripts/                # Utility scripts
+│   ├── generate_demo_data.py
+│   ├── add_pal_gandhi.py
+│   └── clean_leaves.py
+├── docs/                   # Documentation
+│   ├── HACKATHON_READY.md
+│   ├── SUBMISSION_SUMMARY.md
+│   └── ...
+├── odoo.conf              # Odoo configuration
+└── README.md              # This file
+```
+
+---
+
+## 🛠️ Development
+
+### Frontend Development
+```bash
+cd dayflow-frontend
+npm run dev          # Start dev server
+npm run build        # Build for production
+npm run preview      # Preview production build
+```
+
+### Backend Development
+```bash
+# Restart Odoo with auto-reload
+./odoo-bin -c odoo.conf --dev=all
+
+# Update modules
+./odoo-bin -c odoo.conf -u dayflow_hrms,dayflow_payroll,dayflow_performance
+```
+
+### Utility Scripts
+```bash
+# Generate demo data
+python3 scripts/generate_demo_data.py
+
+# Clean old leaves
+python3 scripts/clean_leaves.py
+
+# Add employee
+python3 scripts/add_pal_gandhi.py
+
+# Detect database
+python3 scripts/detect_database.py
+```
+
+---
+
+## 🎬 Demo Flow
+
+1. **Login** → See dashboard with metrics
+2. **Notifications** → Bell shows pending leaves (3)
+3. **Analytics** → View charts with real data
+4. **Attendance** → Check-in/out with mood
+5. **Leave** → Request leave, approve as manager
+6. **Payroll** → View payslips in INR (₹)
+7. **Performance** → View reviews and ratings
+
+---
+
+## 🏆 Hackathon Features
+
+### What Makes Dayflow Stand Out:
+1. ✅ **All Requirements Met** + 2 future enhancements
+2. ✅ **Real-Time Notifications** - Auto-refresh, persistent state
+3. ✅ **Advanced Analytics** - 5 chart types, time-range selection
+4. ✅ **Premium UI** - Better than default Odoo
+5. ✅ **Real Odoo Integration** - Not mocked data
+6. ✅ **Indian Localization** - INR currency, realistic salaries
+
+---
+
+## 📚 Documentation
+
+- [Hackathon Submission](docs/SUBMISSION_SUMMARY.md)
+- [Demo Setup Guide](docs/DEMO_SETUP.md)
+- [Notifications System](docs/NOTIFICATIONS_SYSTEM.md)
+- [UI Enhancements](docs/UI_ENHANCEMENTS.md)
+- [Fixes Applied](docs/FIXES_APPLIED.md)
+
+---
+
+## 🐛 Troubleshooting
+
+### Currency shows $ instead of ₹
+```bash
+# Hard refresh browser
+Cmd+Shift+R (Mac) or Ctrl+Shift+R (Windows)
+```
+
+### Leave approval doesn't work
+```bash
+# Check browser console for errors
+# Ensure leave is in "confirm" state
+# Verify employee has leave allocation
+```
+
+### Database connection error
+```bash
+# Detect correct database name
+python3 scripts/detect_database.py
+```
+
+---
+
+## 🤝 Contributing
+
+This project was built for the Odoo Hackathon 2026. Contributions are welcome!
+
+---
+
+## 📄 License
+
+MIT License - see [LICENSE](LICENSE) file for details
+
+---
+
+## 👨‍💻 Author
+
+**Pal Gandhi**
+- Email: palgandhi@icloud.com
+- Project: Dayflow HRMS
+- Hackathon: Odoo Hackathon 2026
+
+---
+
+## 🙏 Acknowledgments
+
+- Odoo Community for the amazing framework
+- React Team for the excellent library
+- All open-source contributors
+
+---
+
+**Built with ❤️ for Odoo Hackathon 2026** 🚀
