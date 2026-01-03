@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import {
-    Settings, LogOut, Menu, Bell, Search, LayoutDashboard, Zap, Activity, Users, Calendar, Briefcase, DollarSign, BarChart, UserCircle
+    Settings, LogOut, Menu, Bell, Search, LayoutDashboard, Zap, Users, Calendar, Briefcase, DollarSign, BarChart, UserCircle
 } from 'lucide-react';
 
 import type { UserSession } from '../App';
@@ -11,10 +11,14 @@ import LeaveView from './Leave/LeaveView';
 import PerformanceView from './Performance/PerformanceView';
 import PayrollView from './Payroll/PayrollView';
 import ProfileView from './Profile/ProfileView';
+import NotificationDropdown from './ui/NotificationDropdown';
+import { NotificationService, type Notification } from '../services/NotificationService';
+import AnalyticsView from './Analytics/AnalyticsView';
 
 // Define the navigation items
 const NAV_ITEMS = [
     { id: 'dashboard', label: 'Dashboard', icon: LayoutDashboard },
+    { id: 'analytics', label: 'Analytics', icon: BarChart },
     { id: 'employees', label: 'Employees', icon: Users },
     { id: 'attendance', label: 'Attendance', icon: Calendar },
     { id: 'leave', label: 'Leave', icon: Briefcase },
@@ -31,6 +35,39 @@ interface DashboardProps {
 export default function Dashboard({ session, onLogout }: DashboardProps) {
     const [activeTab, setActiveTab] = useState('dashboard');
     const [isSidebarOpen, setSidebarOpen] = useState(true);
+    const [notifications, setNotifications] = useState<Notification[]>([]);
+
+    // Fetch notifications on mount and every 30 seconds
+    useEffect(() => {
+        const fetchNotifications = async () => {
+            const notifs = await NotificationService.fetchNotifications(session);
+            setNotifications(notifs);
+        };
+
+        fetchNotifications();
+        const interval = setInterval(fetchNotifications, 30000); // Refresh every 30 seconds
+
+        return () => clearInterval(interval);
+    }, [session]);
+
+    const handleMarkAsRead = (id: string) => {
+        setNotifications(NotificationService.markAsRead(id, notifications));
+    };
+
+    const handleMarkAllAsRead = () => {
+        setNotifications(NotificationService.markAllAsRead(notifications));
+    };
+
+    const handleNotificationClick = (notification: Notification) => {
+        // Navigate based on notification type
+        if (notification.type === 'leave_request' || notification.type === 'leave_approved' || notification.type === 'leave_rejected') {
+            setActiveTab('leave');
+        } else if (notification.type === 'review_due') {
+            setActiveTab('performance');
+        } else if (notification.type === 'attendance_alert') {
+            setActiveTab('attendance');
+        }
+    };
 
     return (
         <div className="min-h-screen bg-slate-50 flex">
@@ -112,10 +149,12 @@ export default function Dashboard({ session, onLogout }: DashboardProps) {
                     </div>
 
                     <div className="flex items-center space-x-6">
-                        <button className="relative p-2.5 hover:bg-slate-100 rounded-xl transition-colors">
-                            <Bell className="w-6 h-6 text-slate-600" />
-                            <span className="absolute top-2.5 right-2.5 w-2 h-2 bg-red-500 rounded-full ring-2 ring-white"></span>
-                        </button>
+                        <NotificationDropdown
+                            notifications={notifications}
+                            onMarkAsRead={handleMarkAsRead}
+                            onMarkAllAsRead={handleMarkAllAsRead}
+                            onNotificationClick={handleNotificationClick}
+                        />
                         <div className="flex items-center cursor-pointer pl-6 border-l border-slate-200">
                             <div className="text-right mr-4 hidden md:block">
                                 <p className="text-sm font-bold text-slate-900">{session.username}</p>
@@ -151,7 +190,8 @@ export default function Dashboard({ session, onLogout }: DashboardProps) {
 
                         {/* Content Switcher */}
                         <div className="grid gap-8">
-                            {activeTab === 'dashboard' && <DashboardStats session={session} />}
+                            {activeTab === 'dashboard' && <DashboardStats session={session} setActiveTab={setActiveTab} />}
+                            {activeTab === 'analytics' && <AnalyticsView session={session} />}
                             {activeTab === 'employees' && <EmployeeList session={session} />}
                             {activeTab === 'attendance' && <AttendanceView session={session} />}
                             {activeTab === 'leave' && <LeaveView session={session} />}
@@ -159,7 +199,7 @@ export default function Dashboard({ session, onLogout }: DashboardProps) {
                             {activeTab === 'performance' && <PerformanceView session={session} />}
                             {activeTab === 'profile' && <ProfileView session={session} />}
 
-                            {activeTab !== 'dashboard' && activeTab !== 'employees' && activeTab !== 'attendance' && activeTab !== 'leave' && activeTab !== 'performance' && activeTab !== 'payroll' && activeTab !== 'profile' && (
+                            {activeTab !== 'dashboard' && activeTab !== 'analytics' && activeTab !== 'employees' && activeTab !== 'attendance' && activeTab !== 'leave' && activeTab !== 'performance' && activeTab !== 'payroll' && activeTab !== 'profile' && (
                                 <div className="bg-white rounded-3xl p-20 text-center border border-slate-100 shadow-sm">
                                     <div className="w-24 h-24 bg-slate-50 rounded-full mx-auto flex items-center justify-center mb-6">
                                         <Settings className="w-10 h-10 text-slate-400" />
@@ -177,10 +217,9 @@ export default function Dashboard({ session, onLogout }: DashboardProps) {
 
 // Real Stats Component
 import { executeKw } from '../services/odoo';
+import { AreaChart, Area, XAxis, Tooltip, ResponsiveContainer, CartesianGrid, PieChart, Pie, Cell } from 'recharts';
 
-import { AreaChart, Area, XAxis, Tooltip, ResponsiveContainer, CartesianGrid, PieChart, Pie } from 'recharts';
-
-function DashboardStats({ session }: { session: UserSession }) {
+function DashboardStats({ session, setActiveTab }: { session: UserSession; setActiveTab: (t: string) => void }) {
     const [stats, setStats] = useState({
         employees: 0,
         present: 0,
@@ -201,14 +240,12 @@ function DashboardStats({ session }: { session: UserSession }) {
                 const onLeave = await executeKw(session.uid, session.password, 'hr.leave', 'search_count',
                     [[['state', '=', 'validate'], ['date_from', '<=', todayStr], ['date_to', '>=', todayStr]]]
                 );
-                // "My" pending requests for personalization
                 const myPending = await executeKw(session.uid, session.password, 'hr.leave', 'search_count',
                     [[['state', '=', 'confirm'], ['user_id', '=', session.uid]]]
                 );
 
                 setStats({ employees: totalEmp, present, leave: onLeave, pending: myPending, loading: false });
 
-                // Chart Data Logic (Keep existing)
                 const days = [];
                 for (let i = 6; i >= 0; i--) {
                     const d = new Date();
@@ -237,172 +274,139 @@ function DashboardStats({ session }: { session: UserSession }) {
         fetchStats();
     }, [session]);
 
-    if (stats.loading) return <div className="p-12 text-center text-slate-400 font-medium animate-pulse">Loading your dashboard...</div>;
+    if (stats.loading) return <div className="p-12 text-center text-slate-400 font-medium animate-pulse">Loading dashboard...</div>;
 
-    // Time-based Greeting
     const hour = new Date().getHours();
     const greeting = hour < 12 ? 'Good morning' : hour < 18 ? 'Good afternoon' : 'Good evening';
 
-    // Attendance Ring Data
+    const activePct = stats.employees > 0 ? Math.round((stats.present / stats.employees) * 100) : 0;
     const ringData = [
-        { name: 'Present', value: stats.present, fill: '#6366f1' },
-        { name: 'Absent', value: stats.employees - stats.present, fill: '#f1f5f9' },
+        { name: 'Present', value: stats.present, color: '#10b981' },
+        { name: 'Absent', value: stats.employees - stats.present, color: '#f1f5f9' },
     ];
 
     return (
-        <div className="space-y-8 animate-in fade-in duration-700">
+        <div className="space-y-8 animate-in fade-in duration-500">
 
-            {/* 1. PERSONAL HEADER */}
-            <div>
-                <h1 className="text-4xl font-bold text-slate-900 tracking-tight">
-                    {greeting}, {session.username.split('.')[0]}!
-                    <span className="ml-2 inline-block animate-wave origin-bottom-right">👋</span>
-                </h1>
-                <p className="text-slate-500 mt-2 text-lg">
-                    You have <strong className="text-indigo-600">{stats.pending} pending requests</strong> and <strong className="text-emerald-600">running on time</strong> today.
-                </p>
+            {/* CLEAN HEADER */}
+            <div className="flex flex-col md:flex-row justify-between items-end gap-4">
+                <div>
+                    <h1 className="text-4xl font-bold text-slate-900 tracking-tight">
+                        {greeting}, {session.username.split('.')[0]}
+                    </h1>
+                    <p className="text-slate-500 mt-2">
+                        Here's what's happening in your workspace today.
+                    </p>
+                </div>
+                <div className="flex gap-3">
+                    <button
+                        onClick={() => setActiveTab('leave')}
+                        className="px-5 py-2.5 bg-white border border-slate-200 text-slate-700 font-bold rounded-xl hover:bg-slate-50 transition-colors flex items-center gap-2 shadow-sm"
+                    >
+                        <Briefcase className="w-4 h-4" /> Request Leave
+                    </button>
+                    {session.isAdmin && (
+                        <button
+                            onClick={() => setActiveTab('employees')}
+                            className="px-5 py-2.5 bg-indigo-600 text-white font-bold rounded-xl hover:bg-indigo-700 transition-colors flex items-center gap-2 shadow-lg shadow-indigo-200"
+                        >
+                            <Users className="w-4 h-4" /> Add Employee
+                        </button>
+                    )}
+                </div>
             </div>
 
-            {/* 2. MAIN GRID */}
-            <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+            {/* KEY METRICS ROW */}
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
 
-                {/* LEFT COL: Live Status & Chart */}
-                <div className="lg:col-span-2 space-y-8">
-
-                    {/* Live Status Card (The "Elevator" equivalent) */}
-                    <div className="bg-white rounded-[2.5rem] p-8 shadow-sm border border-slate-100 flex flex-col md:flex-row items-center justify-between gap-8 relative overflow-hidden group">
-                        <div className="absolute top-0 right-0 w-64 h-64 bg-indigo-50 rounded-full -mr-32 -mt-32 blur-3xl opacity-50 pointer-events-none"></div>
-
-                        <div className="flex-1 relative z-10">
-                            <div className="flex items-center gap-3 mb-2">
-                                <span className="flex h-3 w-3 relative">
-                                    <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
-                                    <span className="relative inline-flex rounded-full h-3 w-3 bg-emerald-500"></span>
-                                </span>
-                                <span className="text-xs font-bold uppercase tracking-widest text-emerald-600">Live Office Status</span>
-                            </div>
-                            <h3 className="text-2xl font-bold text-slate-900 mb-2">Workspace Capacity</h3>
-                            <p className="text-slate-500 text-sm leading-relaxed mb-6">
-                                The office is currently <strong className="text-slate-900">{Math.round((stats.present / (stats.employees || 1)) * 100)}% occupied</strong>.
-                                Looks like a buzzling day!
-                            </p>
-
-                            <div className="space-y-3">
-                                <div className="flex items-center gap-3 text-sm font-medium text-slate-600">
-                                    <div className="w-2 h-2 rounded-full bg-indigo-500"></div>
-                                    {stats.present} Checked In
-                                </div>
-                                <div className="flex items-center gap-3 text-sm font-medium text-slate-600">
-                                    <div className="w-2 h-2 rounded-full bg-slate-200"></div>
-                                    {stats.employees - stats.present} Away / Planned Leave
-                                </div>
-                            </div>
-                        </div>
-
-                        {/* Donut Chart */}
-                        <div className="w-48 h-48 relative flex-shrink-0">
-                            <ResponsiveContainer width="100%" height="100%">
-                                <PieChart>
-                                    <Pie
-                                        data={ringData}
-                                        innerRadius={60}
-                                        outerRadius={80}
-                                        paddingAngle={5}
-                                        dataKey="value"
-                                        startAngle={90}
-                                        endAngle={-270}
-                                        stroke="none"
-                                        cornerRadius={10}
-                                    />
-                                    <Tooltip contentStyle={{ borderRadius: '12px', border: 'none', boxShadow: '0 10px 15px -3px rgba(0,0,0,0.1)' }} />
-                                </PieChart>
-                            </ResponsiveContainer>
-                            {/* Center Text */}
-                            <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none">
-                                <span className="text-3xl font-bold text-slate-900">{stats.present}</span>
-                                <span className="text-[10px] font-bold uppercase text-slate-400">Active</span>
-                            </div>
+                <div className="bg-white p-6 rounded-3xl border border-slate-100 shadow-sm flex items-center justify-between group hover:shadow-md transition-all">
+                    <div>
+                        <p className="text-slate-500 font-medium text-sm mb-1">Total Present</p>
+                        <h3 className="text-3xl font-bold text-slate-900">{stats.present} <span className="text-lg text-slate-400 font-medium">/ {stats.employees}</span></h3>
+                        <div className="mt-2 text-emerald-600 text-xs font-bold bg-emerald-50 px-2 py-1 rounded-full w-fit">
+                            {activePct}% Active
                         </div>
                     </div>
-
-                    {/* Workforce Activity Chart (Restyled) */}
-                    <div className="bg-white p-8 rounded-[2.5rem] shadow-sm border border-slate-100">
-                        <div className="flex justify-between items-center mb-8">
-                            <h3 className="text-lg font-bold text-slate-900">Weekly Trends</h3>
-                            <select className="bg-slate-50 border-none text-xs font-bold text-slate-500 py-2 px-4 rounded-xl outline-none cursor-pointer hover:bg-slate-100 transition-colors">
-                                <option>Last 7 Days</option>
-                                <option>This Month</option>
-                            </select>
-                        </div>
-                        <div className="h-[250px] w-full">
-                            <ResponsiveContainer width="100%" height="100%">
-                                <AreaChart data={chartData} margin={{ top: 10, right: 10, left: 0, bottom: 0 }}>
-                                    <defs>
-                                        <linearGradient id="colorVal" x1="0" y1="0" x2="0" y2="1">
-                                            <stop offset="5%" stopColor="#6366f1" stopOpacity={0.2} />
-                                            <stop offset="95%" stopColor="#6366f1" stopOpacity={0} />
-                                        </linearGradient>
-                                    </defs>
-                                    <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f1f5f9" />
-                                    <XAxis dataKey="name" axisLine={false} tickLine={false} tick={{ fill: '#94a3b8', fontSize: 12, fontWeight: 600 }} dy={10} />
-                                    <Tooltip contentStyle={{ borderRadius: '12px', border: 'none', boxShadow: '0 10px 15px -3px rgba(0,0,0,0.1)' }} />
-                                    <Area type="monotone" dataKey="value" stroke="#6366f1" strokeWidth={3} fillOpacity={1} fill="url(#colorVal)" />
-                                </AreaChart>
-                            </ResponsiveContainer>
-                        </div>
+                    <div className="w-16 h-16 relative">
+                        <ResponsiveContainer width="100%" height="100%">
+                            <PieChart>
+                                <Pie data={ringData} innerRadius={20} outerRadius={32} dataKey="value" stroke="none">
+                                    {ringData.map((entry, index) => (
+                                        <Cell key={`cell-${index}`} fill={entry.color} />
+                                    ))}
+                                </Pie>
+                            </PieChart>
+                        </ResponsiveContainer>
                     </div>
                 </div>
 
-                {/* RIGHT COL: Action Cards */}
-                <div className="space-y-6">
+                <div className="bg-white p-6 rounded-3xl border border-slate-100 shadow-sm flex items-center justify-between group hover:shadow-md transition-all">
+                    <div>
+                        <p className="text-slate-500 font-medium text-sm mb-1">On Leave</p>
+                        <h3 className="text-3xl font-bold text-slate-900">{stats.leave}</h3>
+                        <p className="text-xs font-medium text-slate-400 mt-2">Valid leaves today</p>
+                    </div>
+                    <div className="p-4 bg-orange-50 text-orange-500 rounded-2xl">
+                        <Briefcase className="w-8 h-8" />
+                    </div>
+                </div>
 
-                    {/* Action Card: Time Off */}
-                    <div className="bg-gradient-to-br from-indigo-600 to-violet-700 p-8 rounded-[2.5rem] shadow-xl shadow-indigo-500/20 text-white relative overflow-hidden text-center group">
-                        <div className="absolute top-0 left-0 w-32 h-32 bg-white rounded-full opacity-10 -ml-10 -mt-10 blur-2xl group-hover:opacity-20 transition-opacity"></div>
-                        <div className="relative z-10">
-                            <Briefcase className="w-10 h-10 mx-auto mb-4 text-indigo-200" />
-                            <h3 className="text-xl font-bold mb-2">Need a Break?</h3>
-                            <p className="text-indigo-100 text-sm mb-6 px-4">You have {12} days of paid leave remaining this year.</p>
-                            <button className="w-full py-3 bg-white text-indigo-600 font-bold rounded-xl hover:bg-indigo-50 transition-colors shadow-lg shadow-black/10">
-                                Request Time Off
-                            </button>
+                <div className="bg-white p-6 rounded-3xl border border-slate-100 shadow-sm flex items-center justify-between group hover:shadow-md transition-all cursor-pointer" onClick={() => setActiveTab('leave')}>
+                    <div>
+                        <p className="text-slate-500 font-medium text-sm mb-1">Pending Requests</p>
+                        <h3 className="text-3xl font-bold text-slate-900">{stats.pending}</h3>
+                        <p className="text-xs font-medium text-indigo-500 mt-2 group-hover:underline">Click to review →</p>
+                    </div>
+                    <div className="p-4 bg-indigo-50 text-indigo-500 rounded-2xl">
+                        <Bell className="w-8 h-8" />
+                    </div>
+                </div>
+            </div>
+
+            {/* CHART & STATUS */}
+            <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+                <div className="lg:col-span-2 bg-white p-8 rounded-[2rem] border border-slate-100 shadow-sm">
+                    <div className="flex justify-between items-center mb-6">
+                        <h3 className="text-lg font-bold text-slate-900">Attendance Trends</h3>
+                        <div className="flex gap-2 items-center">
+                            <span className="w-3 h-3 rounded-full bg-indigo-500"></span>
+                            <span className="text-xs font-bold text-slate-400">Check-ins</span>
                         </div>
                     </div>
+                    <div className="h-[250px] w-full">
+                        <ResponsiveContainer width="100%" height="100%">
+                            <AreaChart data={chartData}>
+                                <defs>
+                                    <linearGradient id="colorVal" x1="0" y1="0" x2="0" y2="1">
+                                        <stop offset="5%" stopColor="#6366f1" stopOpacity={0.1} />
+                                        <stop offset="95%" stopColor="#6366f1" stopOpacity={0} />
+                                    </linearGradient>
+                                </defs>
+                                <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f1f5f9" />
+                                <XAxis dataKey="name" axisLine={false} tickLine={false} tick={{ fill: '#94a3b8', fontSize: 12, fontWeight: 600 }} dy={10} />
+                                <Tooltip contentStyle={{ borderRadius: '12px', border: 'none', boxShadow: '0 10px 15px -3px rgba(0,0,0,0.1)' }} />
+                                <Area type="monotone" dataKey="value" stroke="#6366f1" strokeWidth={3} fillOpacity={1} fill="url(#colorVal)" />
+                            </AreaChart>
+                        </ResponsiveContainer>
+                    </div>
+                </div>
 
-                    {/* Wellness / Quick Info */}
-                    <div className="bg-white p-8 rounded-[2.5rem] shadow-sm border border-slate-100 flex flex-col items-center text-center">
-                        <div className="w-16 h-16 rounded-2xl bg-orange-50 text-orange-500 flex items-center justify-center mb-4">
-                            <Zap className="w-8 h-8 fill-current" />
+                <div className="bg-gradient-to-br from-slate-900 to-slate-800 p-8 rounded-[2rem] text-white flex flex-col justify-between shadow-xl shadow-slate-200">
+                    <div>
+                        <div className="w-12 h-12 bg-white/10 rounded-xl flex items-center justify-center mb-6">
+                            <Zap className="w-6 h-6 text-yellow-400 fill-current" />
                         </div>
-                        <h3 className="text-lg font-bold text-slate-900">Productivity Streak</h3>
-                        <p className="text-sm text-slate-500 mt-1 mb-6">You've checked in on time for <strong>4 days</strong> in a row!</p>
-                        <div className="flex gap-2 justify-center">
-                            {[1, 2, 3, 4].map(i => <div key={i} className="w-2 h-2 rounded-full bg-orange-500"></div>)}
-                            <div className="w-2 h-2 rounded-full bg-slate-200"></div>
+                        <h3 className="text-xl font-bold mb-2">System Status</h3>
+                        <p className="text-slate-400 text-sm leading-relaxed">
+                            Everything is running smoothly. All modules are active and synced with Odoo.
+                        </p>
+                    </div>
+                    <div className="mt-8 pt-6 border-t border-white/10">
+                        <div className="flex items-center justify-between text-sm">
+                            <span className="text-slate-400">Database</span>
+                            <span className="font-mono font-bold text-emerald-400">CONNECTED</span>
                         </div>
                     </div>
-
-                    {/* Calendar Mini (Mock) */}
-                    <div className="bg-white p-6 rounded-[2.5rem] border border-slate-100">
-                        <h4 className="font-bold text-slate-900 mb-4 flex items-center gap-2">
-                            <Calendar className="w-4 h-4 text-indigo-500" /> Today's Agenda
-                        </h4>
-                        <div className="space-y-4">
-                            {[
-                                { time: '10:00 AM', title: 'Team Sync', color: 'bg-blue-500' },
-                                { time: '02:00 PM', title: 'Project Review', color: 'bg-purple-500' }
-                            ].map((evt, i) => (
-                                <div key={i} className="flex gap-4 items-start relative pl-4 border-l border-slate-100">
-                                    <div className={`absolute -left-1.5 top-1.5 w-3 h-3 rounded-full border-2 border-white shadow-sm ${evt.color}`}></div>
-                                    <div className="text-left">
-                                        <p className="text-xs font-bold text-slate-400">{evt.time}</p>
-                                        <p className="text-sm font-bold text-slate-900">{evt.title}</p>
-                                    </div>
-                                </div>
-                            ))}
-                        </div>
-                    </div>
-
                 </div>
             </div>
         </div>
