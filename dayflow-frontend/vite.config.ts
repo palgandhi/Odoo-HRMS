@@ -1,0 +1,19 @@
+import { defineConfig } from 'vite'
+import react from '@vitejs/plugin-react'
+
+// https://vitejs.dev/config/
+export default defineConfig({
+  plugins: [react()],
+  server: {
+    proxy: {
+      '/jsonrpc': {
+        target: 'http://localhost:8069',
+        changeOrigin: true,
+      },
+      '/web': {
+        target: 'http://localhost:8069',
+        changeOrigin: true,
+      }
+    }
+  }
+})
