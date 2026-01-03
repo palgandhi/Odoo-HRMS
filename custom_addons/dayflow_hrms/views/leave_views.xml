@@ -31,8 +31,8 @@
 
     <!-- Leave Report Form View -->
     <record id="view_leave_report_form" model="ir.ui.view">
-        <field name="name">hr.leave.report.form</field>
-        <field name="model">hr.leave.report</field>
+        <field name="name">hr.leave.analysis.form</field>
+        <field name="model">hr.leave.analysis</field>
         <field name="arch" type="xml">
             <form string="Leave Report">
                 <sheet>
@@ -66,8 +66,8 @@
 
     <!-- Leave Report Tree View -->
     <record id="view_leave_report_tree" model="ir.ui.view">
-        <field name="name">hr.leave.report.tree</field>
-        <field name="model">hr.leave.report</field>
+        <field name="name">hr.leave.analysis.tree</field>
+        <field name="model">hr.leave.analysis</field>
         <field name="arch" type="xml">
             <tree string="Leave Reports">
                 <field name="name"/>
@@ -84,7 +84,7 @@
     <!-- Leave Report Action -->
     <record id="action_leave_report" model="ir.actions.act_window">
         <field name="name">Leave Reports</field>
-        <field name="res_model">hr.leave.report</field>
+        <field name="res_model">hr.leave.analysis</field>
         <field name="view_mode">tree,form</field>
     </record>
 

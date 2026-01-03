@@ -82,9 +82,9 @@ class HrLeaveAllocation(models.Model):
     previous_year = fields.Integer(string='Previous Year')
 
 
-class HrLeaveReport(models.Model):
-    _name = 'hr.leave.report'
-    _description = 'Leave Report'
+class HrLeaveAnalysis(models.Model):
+    _name = 'hr.leave.analysis'
+    _description = 'Leave Analysis'
     _order = 'date desc'
 
     name = fields.Char(string='Report Name', required=True)

@@ -1,8 +1,8 @@
 id,name,model_id:id,group_id:id,perm_read,perm_write,perm_create,perm_unlink
 access_hr_attendance_report_user,hr.attendance.report.user,model_hr_attendance_report,hr.group_hr_user,1,1,1,0
 access_hr_attendance_report_manager,hr.attendance.report.manager,model_hr_attendance_report,hr.group_hr_manager,1,1,1,1
-access_hr_leave_report_user,hr.leave.report.user,model_hr_leave_report,hr.group_hr_user,1,1,1,0
-access_hr_leave_report_manager,hr.leave.report.manager,model_hr_leave_report,hr.group_hr_manager,1,1,1,1
+access_hr_leave_analysis_user,hr.leave.analysis.user,model_hr_leave_analysis,hr.group_hr_user,1,1,1,0
+access_hr_leave_analysis_manager,hr.leave.analysis.manager,model_hr_leave_analysis,hr.group_hr_manager,1,1,1,1
 access_hr_performance_review_user,hr.performance.review.user,model_hr_performance_review,hr.group_hr_user,1,1,1,0
 access_hr_performance_review_manager,hr.performance.review.manager,model_hr_performance_review,hr.group_hr_manager,1,1,1,1
 access_hr_performance_review_employee,hr.performance.review.employee,model_hr_performance_review,base.group_user,1,0,0,0
