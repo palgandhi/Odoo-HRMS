@@ -36,7 +36,7 @@
                             <field name="emergency_contact_phone"/>
                             <field name="blood_group"/>
                         </group>
-                        <group string="Education & Skills">
+                        <group string="Education &amp; Skills">
                             <field name="qualification"/>
                             <field name="skills" widget="text"/>
                             <field name="certifications" widget="text"/>
