@@ -129,7 +129,7 @@ export default function Dashboard({ session, onLogout }: DashboardProps) {
             {/* Main Content Area */}
             <div className="flex-1 flex flex-col h-screen overflow-hidden bg-slate-50">
                 {/* Header */}
-                <header className="h-20 bg-white/80 backdrop-blur-md border-b border-slate-200/60 flex items-center justify-between px-8 z-10 sticky top-0">
+                <header className="h-20 bg-white/80 backdrop-blur-md border-b border-slate-200/60 flex items-center justify-between px-8 z-50 sticky top-0">
                     <button
                         onClick={() => setSidebarOpen(!isSidebarOpen)}
                         className="p-2 hover:bg-slate-100/80 rounded-xl text-slate-600 transition-colors"
