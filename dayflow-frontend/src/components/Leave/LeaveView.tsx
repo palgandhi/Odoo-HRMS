@@ -132,13 +132,28 @@ export default function LeaveView({ session }: LeaveViewProps) {
     const handleDecision = async (id: number, decision: 'approve' | 'refuse') => {
         if (!confirm(`Are you sure you want to ${decision} this request?`)) return;
         try {
+            // First, get the leave to check its state
+            const leaves = await executeKw(session.uid, session.password, 'hr.leave', 'read', [[id], ['state']]);
+            const currentState = leaves[0]?.state;
+
+            console.log(`Leave ${id} current state:`, currentState);
+
+            // If leave is in draft, confirm it first
+            if (currentState === 'draft') {
+                console.log('Leave is in draft, confirming first...');
+                await executeKw(session.uid, session.password, 'hr.leave', 'action_confirm', [[id]]);
+            }
+
+            // Now approve or refuse
             const method = decision === 'approve' ? 'action_approve' : 'action_refuse';
             await executeKw(session.uid, session.password, 'hr.leave', method, [[id]]);
+
             await fetchApprovals(); // Refresh list
             toast({ title: 'Success', description: `Request ${decision === 'approve' ? 'approved' : 'refused'}.`, variant: 'success' });
-        } catch (err) {
-            console.error(err);
-            toast({ title: 'Action Failed', description: 'Could not update request status.', variant: 'error' });
+        } catch (err: any) {
+            console.error('Leave decision error:', err);
+            const errorMsg = err.data?.message || err.message || 'Could not update request status.';
+            toast({ title: 'Action Failed', description: errorMsg, variant: 'error' });
         }
     };
 

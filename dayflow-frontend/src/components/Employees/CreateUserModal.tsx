@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { X, Save, Lock, User, Loader, CheckCircle } from 'lucide-react';
+import { X, Lock, User, Loader } from 'lucide-react';
 import { executeKw } from '../../services/odoo';
 import type { UserSession } from '../../App';
 

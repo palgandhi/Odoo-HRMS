@@ -101,7 +101,7 @@ export default function PayrollView({ session }: PayrollViewProps) {
                 <div className="bg-gradient-to-br from-indigo-500 to-indigo-600 rounded-[2rem] p-6 text-white shadow-xl shadow-indigo-500/20 relative overflow-hidden">
                     <div className="relative z-10">
                         <p className="text-indigo-100 font-medium mb-1">Total Net Pay</p>
-                        <h3 className="text-3xl font-bold tracking-tight">${slips.reduce((sum, s) => sum + s.net_wage, 0).toLocaleString()}</h3>
+                        <h3 className="text-3xl font-bold tracking-tight">₹{slips.reduce((sum, s) => sum + s.net_wage, 0).toLocaleString()}</h3>
                     </div>
                     <div className="absolute right-0 bottom-0 opacity-10 transform translate-x-4 translate-y-4">
                         <DollarSign className="w-32 h-32" />
@@ -162,8 +162,8 @@ export default function PayrollView({ session }: PayrollViewProps) {
                                     </td>
                                     <td className="px-6 py-5 text-slate-600 font-medium">{slip.employee_id[1]}</td>
                                     <td className="px-6 py-5 text-slate-500">{splitDate(slip.date)}</td>
-                                    <td className="px-6 py-5 text-right text-slate-500 font-mono">${slip.basic_wage.toLocaleString()}</td>
-                                    <td className="px-6 py-5 text-right font-bold text-slate-900 font-mono text-base">${slip.net_wage.toLocaleString()}</td>
+                                    <td className="px-6 py-5 text-right text-slate-500 font-mono">₹{slip.basic_wage.toLocaleString()}</td>
+                                    <td className="px-6 py-5 text-right font-bold text-slate-900 font-mono text-base">₹{slip.net_wage.toLocaleString()}</td>
                                     <td className="px-6 py-5 text-center">
                                         {slip.state === 'paid' ? (
                                             <span className="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-bold bg-emerald-100 text-emerald-700 border border-emerald-200">
@@ -218,7 +218,7 @@ export default function PayrollView({ session }: PayrollViewProps) {
                                 <div>
                                     <label className="block text-sm font-bold text-slate-700 mb-2">Basic Wage</label>
                                     <div className="relative">
-                                        <span className="absolute left-4 top-3 text-slate-400">$</span>
+                                        <span className="absolute left-4 top-3 text-slate-400">₹</span>
                                         <input type="number" required className="w-full pl-8 pr-4 py-3 bg-slate-50 border border-slate-200 rounded-xl outline-none focus:ring-4 focus:ring-indigo-500/10 focus:border-indigo-500 font-mono"
                                             value={formData.basicWage} onChange={e => setFormData({ ...formData, basicWage: e.target.value })} />
                                     </div>
@@ -226,7 +226,7 @@ export default function PayrollView({ session }: PayrollViewProps) {
                                 <div>
                                     <label className="block text-sm font-bold text-slate-700 mb-2">Allowances</label>
                                     <div className="relative">
-                                        <span className="absolute left-4 top-3 text-slate-400">$</span>
+                                        <span className="absolute left-4 top-3 text-slate-400">₹</span>
                                         <input type="number" className="w-full pl-8 pr-4 py-3 bg-slate-50 border border-slate-200 rounded-xl outline-none focus:ring-4 focus:ring-indigo-500/10 focus:border-indigo-500 font-mono"
                                             value={formData.allowances} onChange={e => setFormData({ ...formData, allowances: e.target.value })} />
                                     </div>
@@ -235,7 +235,7 @@ export default function PayrollView({ session }: PayrollViewProps) {
                             <div>
                                 <label className="block text-sm font-bold text-slate-700 mb-2">Deductions</label>
                                 <div className="relative">
-                                    <span className="absolute left-4 top-3 text-slate-400">$</span>
+                                    <span className="absolute left-4 top-3 text-slate-400">₹</span>
                                     <input type="number" className="w-full pl-8 pr-4 py-3 bg-slate-50 border border-slate-200 rounded-xl outline-none focus:ring-4 focus:ring-indigo-500/10 focus:border-indigo-500 font-mono"
                                         value={formData.deductions} onChange={e => setFormData({ ...formData, deductions: e.target.value })} />
                                 </div>
