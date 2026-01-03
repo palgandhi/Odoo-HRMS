@@ -24,11 +24,15 @@
               parent="menu_dayflow_hrms_root"
               sequence="30"/>
 
-    <!-- Payroll -->
+
+    <!-- Payroll - Requires Enterprise Edition -->
+    <!--
     <menuitem id="menu_dayflow_payroll"
               name="Payroll"
               parent="menu_dayflow_hrms_root"
               sequence="40"/>
+    -->
+
 
     <!-- Performance -->
     <menuitem id="menu_dayflow_performance"

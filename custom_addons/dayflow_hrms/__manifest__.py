@@ -26,8 +26,6 @@
         'hr',
         'hr_attendance',
         'hr_holidays',
-        'hr_payroll',
-        'hr_contract',
     ],
     'data': [
         # Security
@@ -37,7 +35,7 @@
         'views/employee_views.xml',
         'views/attendance_views.xml',
         'views/leave_views.xml',
-        'views/payroll_views.xml',
+        # 'views/payroll_views.xml',  # Requires hr_payroll module (Enterprise)
         'views/performance_views.xml',
         'views/menu_views.xml',
         
