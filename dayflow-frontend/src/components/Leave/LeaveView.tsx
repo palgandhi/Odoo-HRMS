@@ -1,5 +1,7 @@
 import { useState, useEffect } from 'react';
 import { Plus, Calendar, CheckCircle, Clock, XCircle, FileText, CheckSquare, User } from 'lucide-react';
+import { useToast } from '../ui/Toast';
+import { PieChart, Pie, Cell, Tooltip as RechartsTooltip, Legend, ResponsiveContainer } from 'recharts';
 import { executeKw } from '../../services/odoo';
 import type { UserSession } from '../../App';
 
@@ -26,6 +28,7 @@ interface LeaveRequest {
 export default function LeaveView({ session }: LeaveViewProps) {
     const isManager = session.isAdmin;
     const [viewMode, setViewMode] = useState<'my' | 'approvals'>(isManager ? 'approvals' : 'my');
+    const { toast } = useToast();
 
     const [loading, setLoading] = useState(true);
     const [employeeId, setEmployeeId] = useState<number | null>(null);
@@ -117,9 +120,10 @@ export default function LeaveView({ session }: LeaveViewProps) {
             setShowForm(false);
             setFormData({ leaveTypeId: '', dateFrom: '', dateTo: '', description: '' });
             await fetchRequests(employeeId);
+            toast({ title: 'Request Sent', description: 'Your leave request has been submitted.', variant: 'success' });
         } catch (err: any) {
             console.error(err);
-            alert("Failed: " + (err.data?.message || err.message));
+            toast({ title: 'Submission Failed', description: err.data?.message || err.message, variant: 'error' });
         } finally {
             setSubmitting(false);
         }
@@ -131,9 +135,10 @@ export default function LeaveView({ session }: LeaveViewProps) {
             const method = decision === 'approve' ? 'action_approve' : 'action_refuse';
             await executeKw(session.uid, session.password, 'hr.leave', method, [[id]]);
             await fetchApprovals(); // Refresh list
+            toast({ title: 'Success', description: `Request ${decision === 'approve' ? 'approved' : 'refused'}.`, variant: 'success' });
         } catch (err) {
             console.error(err);
-            alert("Action failed. Check console.");
+            toast({ title: 'Action Failed', description: 'Could not update request status.', variant: 'error' });
         }
     };
 
@@ -150,29 +155,29 @@ export default function LeaveView({ session }: LeaveViewProps) {
     if (error) return <div className="p-8 text-red-500">{error}</div>;
 
     return (
-        <div className="max-w-6xl mx-auto space-y-6">
+        <div className="max-w-6xl mx-auto space-y-8 animate-in fade-in duration-500">
 
             {/* Header & Role Switcher */}
-            <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+            <div className="flex flex-col md:flex-row md:items-center justify-between gap-6">
                 <div>
-                    <h2 className="text-2xl font-bold text-slate-900">Leave Management</h2>
-                    <p className="text-slate-500">{viewMode === 'approvals' ? 'Review and approve team requests' : 'Manage your time off'}</p>
+                    <h2 className="text-3xl font-bold text-slate-900 tracking-tight">Leave Management</h2>
+                    <p className="text-slate-500 mt-1">{viewMode === 'approvals' ? 'Review and approve team requests' : 'Manage your time off and view history'}</p>
                 </div>
-                <div className="flex gap-2">
+                <div className="flex gap-4">
                     {isManager && (
-                        <div className="bg-slate-100 p-1 rounded-xl inline-flex mr-2">
-                            <button onClick={() => setViewMode('approvals')} className={`px-4 py-2 rounded-lg text-sm font-medium transition-all flex items-center gap-2 ${viewMode === 'approvals' ? 'bg-white text-blue-600 shadow-sm' : 'text-slate-500'}`}>
+                        <div className="bg-slate-100 p-1.5 rounded-xl inline-flex mr-2 shadow-inner">
+                            <button onClick={() => setViewMode('approvals')} className={`px-4 py-2 rounded-lg text-sm font-bold transition-all flex items-center gap-2 ${viewMode === 'approvals' ? 'bg-white text-indigo-600 shadow-sm' : 'text-slate-500 hover:text-slate-700'}`}>
                                 <CheckSquare className="w-4 h-4" /> Approvals
-                                {pendingApprovals.length > 0 && <span className="bg-red-500 text-white text-[10px] px-1.5 rounded-full">{pendingApprovals.length}</span>}
+                                {pendingApprovals.length > 0 && <span className="bg-red-500 text-white text-[10px] px-1.5 py-0.5 rounded-full shadow-sm">{pendingApprovals.length}</span>}
                             </button>
-                            <button onClick={() => setViewMode('my')} className={`px-4 py-2 rounded-lg text-sm font-medium transition-all flex items-center gap-2 ${viewMode === 'my' ? 'bg-white text-blue-600 shadow-sm' : 'text-slate-500'}`}>
+                            <button onClick={() => setViewMode('my')} className={`px-4 py-2 rounded-lg text-sm font-bold transition-all flex items-center gap-2 ${viewMode === 'my' ? 'bg-white text-indigo-600 shadow-sm' : 'text-slate-500 hover:text-slate-700'}`}>
                                 <User className="w-4 h-4" /> My Leaves
                             </button>
                         </div>
                     )}
                     <button
                         onClick={() => setShowForm(true)}
-                        className="flex items-center justify-center px-4 py-2 bg-blue-600 text-white rounded-xl hover:bg-blue-700 font-medium shadow-lg shadow-blue-500/20 transition-all"
+                        className="flex items-center justify-center px-6 py-2.5 bg-indigo-600 text-white rounded-xl hover:bg-indigo-700 font-bold shadow-lg shadow-indigo-500/20 hover:shadow-indigo-500/40 transition-all transform hover:-translate-y-0.5"
                     >
                         <Plus className="w-5 h-5 mr-2" />
                         New Request
@@ -184,44 +189,53 @@ export default function LeaveView({ session }: LeaveViewProps) {
             {viewMode === 'approvals' && (
                 <div className="space-y-4">
                     {pendingApprovals.length === 0 ? (
-                        <div className="bg-white rounded-2xl p-12 text-center border border-dashed border-slate-200">
-                            <CheckCircle className="w-12 h-12 text-green-100 mx-auto mb-4 bg-green-500 rounded-full p-2" />
-                            <h3 className="text-lg font-bold text-slate-900">All Caught Up!</h3>
-                            <p className="text-slate-500">No pending leave requests to review.</p>
+                        <div className="bg-white rounded-3xl p-16 text-center border border-dashed border-slate-200">
+                            <div className="w-20 h-20 bg-emerald-50 rounded-full mx-auto flex items-center justify-center mb-6">
+                                <CheckCircle className="w-10 h-10 text-emerald-500" />
+                            </div>
+                            <h3 className="text-xl font-bold text-slate-900">All Caught Up!</h3>
+                            <p className="text-slate-500 max-w-sm mx-auto mt-2">There are no pending leave requests requiring your attention.</p>
                         </div>
                     ) : (
-                        pendingApprovals.map(req => (
-                            <div key={req.id} className="bg-white rounded-xl p-6 shadow-sm border border-slate-100 flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
-                                <div className="flex items-start gap-4">
-                                    <div className="w-12 h-12 rounded-full bg-orange-100 text-orange-600 flex items-center justify-center font-bold">
+                        pendingApprovals.map((req, i) => (
+                            <div key={req.id} className="bg-white rounded-2xl p-6 shadow-sm border border-slate-100 flex flex-col md:flex-row justify-between items-start md:items-center gap-6 hover:shadow-md transition-shadow animate-in slide-in-from-bottom-2 duration-300" style={{ animationDelay: `${i * 100}ms` }}>
+                                <div className="flex items-start gap-5">
+                                    <div className="w-14 h-14 rounded-2xl bg-gradient-to-br from-indigo-50 to-slate-100 text-indigo-600 flex items-center justify-center font-bold text-lg shadow-inner border border-white">
                                         {req.employee_id[1].charAt(0)}
                                     </div>
                                     <div>
-                                        <h4 className="font-bold text-slate-900 text-lg">{req.employee_id[1]}</h4>
-                                        <div className="flex items-center gap-2 text-sm text-slate-600 mt-1">
-                                            <span className="font-medium text-slate-900">{req.holiday_status_id[1]}</span>
-                                            <span>•</span>
-                                            <span>{req.duration_display} days</span>
+                                        <h4 className="font-bold text-slate-900 text-lg flex items-center gap-2">
+                                            {req.employee_id[1]}
+                                            <span className="bg-indigo-50 text-indigo-700 text-xs px-2 py-0.5 rounded-full font-bold border border-indigo-100">{req.holiday_status_id[1]}</span>
+                                        </h4>
+                                        <div className="flex items-center gap-3 text-sm text-slate-500 mt-1">
+                                            <span className="flex items-center gap-1 font-medium text-slate-700">
+                                                <Clock className="w-3.5 h-3.5" />
+                                                {req.duration_display} days
+                                            </span>
+                                            <span className="w-1 h-1 bg-slate-300 rounded-full"></span>
+                                            <span className="flex items-center gap-1">
+                                                <Calendar className="w-3.5 h-3.5" />
+                                                {new Date(req.date_from).toLocaleDateString(undefined, { month: 'short', day: 'numeric' })}
+                                                <span className="text-slate-300">➜</span>
+                                                {new Date(req.date_to).toLocaleDateString(undefined, { month: 'short', day: 'numeric' })}
+                                            </span>
                                         </div>
-                                        <div className="flex items-center gap-2 text-xs text-slate-500 mt-2 bg-slate-50 px-3 py-1.5 rounded-lg inline-flex">
-                                            <Calendar className="w-3 h-3" />
-                                            {new Date(req.date_from).toLocaleDateString()} — {new Date(req.date_to).toLocaleDateString()}
-                                        </div>
-                                        {req.name && <p className="text-sm text-slate-500 mt-2 italic">"{req.name}"</p>}
+                                        {req.name && <p className="text-sm text-slate-500 mt-3 italic bg-slate-50 p-2 rounded-lg border border-slate-100 inline-block">"{req.name}"</p>}
                                     </div>
                                 </div>
-                                <div className="flex gap-3 w-full md:w-auto">
+                                <div className="flex gap-3 w-full md:w-auto pl-16 md:pl-0">
                                     <button
                                         onClick={() => handleDecision(req.id, 'refuse')}
-                                        className="flex-1 md:flex-none px-4 py-2 border border-slate-200 text-slate-600 rounded-lg hover:bg-slate-50 font-medium text-sm"
+                                        className="flex-1 md:flex-none px-5 py-2.5 border border-slate-200 text-slate-600 rounded-xl hover:bg-red-50 hover:text-red-600 hover:border-red-200 font-bold text-sm transition-colors"
                                     >
                                         Refuse
                                     </button>
                                     <button
                                         onClick={() => handleDecision(req.id, 'approve')}
-                                        className="flex-1 md:flex-none px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 font-medium text-sm shadow-sm"
+                                        className="flex-1 md:flex-none px-6 py-2.5 bg-emerald-500 text-white rounded-xl hover:bg-emerald-600 font-bold text-sm shadow-lg shadow-emerald-500/20 transition-all transform active:scale-95"
                                     >
-                                        Approve Request
+                                        Approve
                                     </button>
                                 </div>
                             </div>
@@ -232,43 +246,80 @@ export default function LeaveView({ session }: LeaveViewProps) {
 
             {/* MY REQUESTS VIEW */}
             {viewMode === 'my' && (
-                <div className="bg-white rounded-2xl shadow-sm border border-slate-100 overflow-hidden">
-                    <div className="px-6 py-4 border-b border-slate-100 flex items-center gap-2">
-                        <FileText className="w-5 h-5 text-slate-400" />
-                        <h3 className="font-bold text-slate-900">Request History</h3>
+                <div className="bg-white rounded-3xl shadow-sm border border-slate-100 overflow-hidden">
+                    <div className="px-8 py-6 border-b border-slate-100 flex items-center gap-3 bg-slate-50/50">
+                        <div className="p-2 bg-white rounded-lg shadow-sm text-indigo-500">
+                            <FileText className="w-5 h-5" />
+                        </div>
+                        <h3 className="font-bold text-slate-900 text-lg">Request History</h3>
                     </div>
 
+                    {/* Chart Section */}
+                    {myRequests.length > 0 && (
+                        <div className="p-8 bg-white flex flex-col md:flex-row items-center justify-around border-b border-slate-100">
+                            <div className="text-center md:text-left mb-6 md:mb-0">
+                                <h4 className="text-2xl font-bold text-slate-900 mb-1">Time Off Analysis</h4>
+                                <p className="text-slate-500 text-sm">Distribution of your leave requests by type.</p>
+                            </div>
+                            <div className="w-64 h-64">
+                                <ResponsiveContainer width="100%" height="100%">
+                                    <PieChart>
+                                        <Pie
+                                            data={Object.values(myRequests.reduce((acc, curr) => {
+                                                const typeName = curr.holiday_status_id[1];
+                                                if (!acc[typeName]) acc[typeName] = { name: typeName, value: 0 };
+                                                acc[typeName].value += 1;
+                                                return acc;
+                                            }, {} as any))}
+                                            cx="50%"
+                                            cy="50%"
+                                            innerRadius={60}
+                                            outerRadius={80}
+                                            paddingAngle={5}
+                                            dataKey="value"
+                                        >
+                                            {[...Array(10)].map((_, index) => (
+                                                <Cell key={`cell-${index}`} fill={['#6366f1', '#10b981', '#f59e0b', '#ef4444', '#8b5cf6'][index % 5]} />
+                                            ))}
+                                        </Pie>
+                                        <RechartsTooltip contentStyle={{ borderRadius: '12px', border: 'none', boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1)' }} />
+                                        <Legend verticalAlign="bottom" height={36} iconType="circle" />
+                                    </PieChart>
+                                </ResponsiveContainer>
+                            </div>
+                        </div>
+                    )}
+
                     {myRequests.length === 0 ? (
-                        <div className="p-12 text-center text-slate-400">No leave requests found.</div>
+                        <div className="p-20 text-center text-slate-400 font-medium">No leave requests found in history.</div>
                     ) : (
                         <div className="overflow-x-auto">
                             <table className="w-full text-left text-sm">
-                                <thead className="bg-slate-50 text-slate-500">
+                                <thead className="bg-slate-50 text-slate-500 font-semibold border-b border-slate-100">
                                     <tr>
-                                        <th className="px-6 py-3 font-medium">Type</th>
-                                        <th className="px-6 py-3 font-medium">Dates</th>
-                                        <th className="px-6 py-3 font-medium">Duration</th>
-                                        <th className="px-6 py-3 font-medium">Description</th>
-                                        <th className="px-6 py-3 font-medium text-right">Status</th>
+                                        <th className="px-8 py-4">Type</th>
+                                        <th className="px-6 py-4">Dates</th>
+                                        <th className="px-6 py-4">Duration</th>
+                                        <th className="px-6 py-4">Description</th>
+                                        <th className="px-8 py-4 text-right">Status</th>
                                     </tr>
                                 </thead>
-                                <tbody className="divide-y divide-slate-100">
+                                <tbody className="divide-y divide-slate-50">
                                     {myRequests.map((req) => (
-                                        <tr key={req.id} className="hover:bg-slate-50 transition-colors">
-                                            <td className="px-6 py-4 font-medium text-slate-900">
+                                        <tr key={req.id} className="hover:bg-slate-50/80 transition-colors group">
+                                            <td className="px-8 py-5 font-bold text-slate-900">
                                                 {req.holiday_status_id[1]}
                                             </td>
-                                            <td className="px-6 py-4 text-slate-600">
-                                                <div className="flex items-center gap-2">
-                                                    <Calendar className="w-4 h-4 text-slate-400" />
+                                            <td className="px-6 py-5 text-slate-600">
+                                                <div className="flex items-center gap-2 font-medium">
                                                     <span>{new Date(req.date_from).toLocaleDateString()}</span>
-                                                    <span className="text-slate-300">→</span>
+                                                    <span className="text-slate-300">➜</span>
                                                     <span>{new Date(req.date_to).toLocaleDateString()}</span>
                                                 </div>
                                             </td>
-                                            <td className="px-6 py-4 text-slate-600">{req.duration_display}</td>
-                                            <td className="px-6 py-4 text-slate-600 max-w-xs truncate">{req.name || '-'}</td>
-                                            <td className="px-6 py-4 text-right">{renderStatus(req.state)}</td>
+                                            <td className="px-6 py-5 text-slate-600 font-mono text-xs bg-slate-50 rounded px-2 w-fit mx-6">{req.duration_display}d</td>
+                                            <td className="px-6 py-5 text-slate-500 italic max-w-xs truncate">{req.name || '-'}</td>
+                                            <td className="px-8 py-5 text-right">{renderStatus(req.state)}</td>
                                         </tr>
                                     ))}
                                 </tbody>
@@ -278,49 +329,54 @@ export default function LeaveView({ session }: LeaveViewProps) {
                 </div>
             )}
 
-            {/* New Request Modal (Same as before) */}
+            {/* New Request Modal */}
             {showForm && (
-                <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4 backdrop-blur-sm">
-                    <div className="bg-white rounded-2xl w-full max-w-md shadow-2xl animate-in fade-in zoom-in duration-200">
-                        <div className="px-6 py-4 border-b border-slate-100 flex justify-between items-center">
+                <div className="fixed inset-0 bg-slate-900/40 flex items-center justify-center z-50 p-4 backdrop-blur-sm animate-in fade-in duration-200">
+                    <div className="bg-white rounded-3xl w-full max-w-lg shadow-2xl shadow-slate-900/20 animate-in zoom-in-95 duration-200 border border-slate-100 overflow-hidden">
+                        <div className="px-8 py-6 border-b border-slate-100 flex justify-between items-center bg-slate-50/50">
                             <h3 className="text-xl font-bold text-slate-900">New Leave Request</h3>
-                            <button onClick={() => setShowForm(false)} className="text-slate-400 hover:text-slate-600">
+                            <button onClick={() => setShowForm(false)} className="text-slate-400 hover:text-slate-600 p-1 hover:bg-slate-100 rounded-full transition-colors">
                                 <XCircle className="w-6 h-6" />
                             </button>
                         </div>
 
-                        <form onSubmit={handleCreate} className="p-6 space-y-4">
+                        <form onSubmit={handleCreate} className="p-8 space-y-6">
                             <div>
-                                <label className="block text-sm font-medium text-slate-700 mb-1">Leave Type</label>
-                                <select
-                                    required
-                                    className="w-full px-4 py-2 bg-slate-50 border border-slate-200 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none"
-                                    value={formData.leaveTypeId}
-                                    onChange={e => setFormData({ ...formData, leaveTypeId: e.target.value })}
-                                >
-                                    <option value="">Select a type...</option>
-                                    {leaveTypes.map(type => (
-                                        <option key={type.id} value={type.id}>{type.name}</option>
-                                    ))}
-                                </select>
-                            </div>
-                            <div className="grid grid-cols-2 gap-4">
-                                <div>
-                                    <label className="block text-sm font-medium text-slate-700 mb-1">Start Date</label>
-                                    <input type="date" required className="w-full px-4 py-2 border border-slate-200 rounded-lg outline-none" value={formData.dateFrom} onChange={e => setFormData({ ...formData, dateFrom: e.target.value })} />
-                                </div>
-                                <div>
-                                    <label className="block text-sm font-medium text-slate-700 mb-1">End Date</label>
-                                    <input type="date" required className="w-full px-4 py-2 border border-slate-200 rounded-lg outline-none" value={formData.dateTo} onChange={e => setFormData({ ...formData, dateTo: e.target.value })} min={formData.dateFrom} />
+                                <label className="block text-sm font-bold text-slate-700 mb-2">Leave Type</label>
+                                <div className="relative">
+                                    <select
+                                        required
+                                        className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl focus:ring-4 focus:ring-indigo-500/10 focus:border-indigo-500 outline-none appearance-none font-medium text-slate-700"
+                                        value={formData.leaveTypeId}
+                                        onChange={e => setFormData({ ...formData, leaveTypeId: e.target.value })}
+                                    >
+                                        <option value="">Select a type...</option>
+                                        {leaveTypes.map(type => (
+                                            <option key={type.id} value={type.id}>{type.name}</option>
+                                        ))}
+                                    </select>
+                                    <div className="absolute right-4 top-3.5 pointer-events-none text-slate-500">
+                                        <svg className="w-4 h-4 fill-current" viewBox="0 0 20 20"><path d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z" /></svg>
+                                    </div>
                                 </div>
                             </div>
-                            <div>
-                                <label className="block text-sm font-medium text-slate-700 mb-1">Description</label>
-                                <textarea className="w-full px-4 py-2 border border-slate-200 rounded-lg outline-none h-24 resize-none" placeholder="Reason..." value={formData.description} onChange={e => setFormData({ ...formData, description: e.target.value })} />
+                            <div className="grid grid-cols-2 gap-6">
+                                <div>
+                                    <label className="block text-sm font-bold text-slate-700 mb-2">Start Date</label>
+                                    <input type="date" required className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl outline-none focus:ring-4 focus:ring-indigo-500/10 focus:border-indigo-500 font-medium" value={formData.dateFrom} onChange={e => setFormData({ ...formData, dateFrom: e.target.value })} />
+                                </div>
+                                <div>
+                                    <label className="block text-sm font-bold text-slate-700 mb-2">End Date</label>
+                                    <input type="date" required className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl outline-none focus:ring-4 focus:ring-indigo-500/10 focus:border-indigo-500 font-medium" value={formData.dateTo} onChange={e => setFormData({ ...formData, dateTo: e.target.value })} min={formData.dateFrom} />
+                                </div>
                             </div>
-                            <div className="pt-2 flex justify-end gap-2">
-                                <button type="button" onClick={() => setShowForm(false)} className="px-4 py-2 text-slate-600 hover:bg-slate-50 rounded-lg font-medium">Cancel</button>
-                                <button type="submit" disabled={submitting} className="px-6 py-2 bg-blue-600 text-white rounded-lg font-medium hover:bg-blue-700 transition-colors disabled:opacity-50">Submit Request</button>
+                            <div>
+                                <label className="block text-sm font-bold text-slate-700 mb-2">Notes</label>
+                                <textarea className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl outline-none h-28 resize-none focus:ring-4 focus:ring-indigo-500/10 focus:border-indigo-500" placeholder="Optional reasoning..." value={formData.description} onChange={e => setFormData({ ...formData, description: e.target.value })} />
+                            </div>
+                            <div className="pt-4 flex justify-end gap-3">
+                                <button type="button" onClick={() => setShowForm(false)} className="px-6 py-3 text-slate-600 hover:bg-slate-50 rounded-xl font-bold transition-colors">Cancel</button>
+                                <button type="submit" disabled={submitting} className="px-8 py-3 bg-indigo-600 text-white rounded-xl font-bold hover:bg-indigo-700 shadow-lg shadow-indigo-500/20 transition-all disabled:opacity-50 disabled:shadow-none transform active:scale-95">Submit Request</button>
                             </div>
                         </form>
                     </div>

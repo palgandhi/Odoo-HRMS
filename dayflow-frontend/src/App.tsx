@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import Login from './components/Login';
 import Dashboard from './components/Dashboard';
+import { ToastProvider } from './components/ui/Toast';
 
 // Define the User Session type
 export interface UserSession {
@@ -24,14 +25,16 @@ function App() {
 
   return (
     <>
-      {session ? (
-        <Dashboard
-          session={session}
-          onLogout={handleLogout}
-        />
-      ) : (
-        <Login onLogin={handleLogin} />
-      )}
+      <ToastProvider>
+        {session ? (
+          <Dashboard
+            session={session}
+            onLogout={handleLogout}
+          />
+        ) : (
+          <Login onLogin={handleLogin} />
+        )}
+      </ToastProvider>
     </>
   );
 }
