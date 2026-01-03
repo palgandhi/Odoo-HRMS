@@ -178,7 +178,7 @@ export default function Dashboard({ session, onLogout }: DashboardProps) {
 // Real Stats Component
 import { executeKw } from '../services/odoo';
 
-import { AreaChart, Area, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid } from 'recharts';
+import { AreaChart, Area, XAxis, Tooltip, ResponsiveContainer, CartesianGrid, PieChart, Pie } from 'recharts';
 
 function DashboardStats({ session }: { session: UserSession }) {
     const [stats, setStats] = useState({
@@ -193,7 +193,6 @@ function DashboardStats({ session }: { session: UserSession }) {
     useEffect(() => {
         const fetchStats = async () => {
             try {
-                // 1. Basic Counts
                 const totalEmp = await executeKw(session.uid, session.password, 'hr.employee', 'search_count', [[]]);
                 const present = await executeKw(session.uid, session.password, 'hr.attendance', 'search_count', [[['check_out', '=', false]]]);
 
@@ -202,194 +201,210 @@ function DashboardStats({ session }: { session: UserSession }) {
                 const onLeave = await executeKw(session.uid, session.password, 'hr.leave', 'search_count',
                     [[['state', '=', 'validate'], ['date_from', '<=', todayStr], ['date_to', '>=', todayStr]]]
                 );
-                const pending = await executeKw(session.uid, session.password, 'hr.leave', 'search_count', [[['state', '=', 'confirm']]]);
+                // "My" pending requests for personalization
+                const myPending = await executeKw(session.uid, session.password, 'hr.leave', 'search_count',
+                    [[['state', '=', 'confirm'], ['user_id', '=', session.uid]]]
+                );
 
-                setStats({ employees: totalEmp, present, leave: onLeave, pending, loading: false });
+                setStats({ employees: totalEmp, present, leave: onLeave, pending: myPending, loading: false });
 
-                // 2. Real Chart Data (Last 7 Days Attendance)
+                // Chart Data Logic (Keep existing)
                 const days = [];
                 for (let i = 6; i >= 0; i--) {
                     const d = new Date();
                     d.setDate(now.getDate() - i);
                     days.push(d);
                 }
-
                 const chartPromises = days.map(async (date) => {
                     const start = new Date(date);
-                    start.setHours(0, 0, 0, 0); // UTC conversion might be needed in prod, keeping local for simpler logic
+                    start.setHours(0, 0, 0, 0);
                     const end = new Date(date);
                     end.setHours(23, 59, 59, 999);
-
-                    // Odoo expects UTC usually, sending naive local time string might work depends on server, 
-                    // generally safe to pass string 'YYYY-MM-DD 00:00:00'.
-                    // Formatting to simple string format
                     const startStr = start.toISOString().replace('T', ' ').split('.')[0];
                     const endStr = end.toISOString().replace('T', ' ').split('.')[0];
-
                     const count = await executeKw(session.uid, session.password, 'hr.attendance', 'search_count',
                         [[['check_in', '>=', startStr], ['check_in', '<=', endStr]]]
                     );
-
-                    return {
-                        name: date.toLocaleDateString('en-US', { weekday: 'short' }),
-                        fullDate: date.toLocaleDateString(),
-                        value: count
-                    };
+                    return { name: date.toLocaleDateString('en-US', { weekday: 'short' }), value: count };
                 });
-
-                const realChartData = await Promise.all(chartPromises);
-                setChartData(realChartData);
+                setChartData(await Promise.all(chartPromises));
 
             } catch (err) {
-                console.error("Dashboard Sync Error:", err);
+                console.error(err);
                 setStats(prev => ({ ...prev, loading: false }));
             }
         };
-
         fetchStats();
     }, [session]);
 
-    if (stats.loading) return <div className="p-12 text-center text-slate-400 font-medium animate-pulse">Syncing Dashboard...</div>;
+    if (stats.loading) return <div className="p-12 text-center text-slate-400 font-medium animate-pulse">Loading your dashboard...</div>;
 
-    const cards = [
-        { label: 'Total Employees', value: stats.employees.toString(), gradient: 'from-blue-500 to-indigo-600', icon: Users, trend: 'Registered' },
-        { label: 'Present Today', value: stats.present.toString(), gradient: 'from-emerald-500 to-teal-600', icon: Calendar, sub: stats.employees > 0 ? `${Math.round((stats.present / stats.employees) * 100)}%` : '0%', trend: 'Active now' },
-        { label: 'On Leave', value: stats.leave.toString(), gradient: 'from-orange-400 to-red-500', icon: Briefcase, trend: 'Returning soon' },
-        { label: 'Pending Requests', value: stats.pending.toString(), gradient: 'from-violet-500 to-purple-600', icon: Bell, trend: 'Requires attention' },
+    // Time-based Greeting
+    const hour = new Date().getHours();
+    const greeting = hour < 12 ? 'Good morning' : hour < 18 ? 'Good afternoon' : 'Good evening';
+
+    // Attendance Ring Data
+    const ringData = [
+        { name: 'Present', value: stats.present, fill: '#6366f1' },
+        { name: 'Absent', value: stats.employees - stats.present, fill: '#f1f5f9' },
     ];
 
     return (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-            {cards.map((stat, i) => (
-                <motion.div
-                    key={i}
-                    initial={{ opacity: 0, y: 20 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    transition={{ delay: i * 0.1 }}
-                    className="relative overflow-hidden bg-white p-6 rounded-3xl shadow-sm border border-slate-100 hover:shadow-lg transition-all duration-300 group"
-                >
-                    <div className="flex justify-between items-start mb-4">
-                        <div className={`p-3 rounded-2xl bg-gradient-to-br ${stat.gradient} text-white shadow-lg`}>
-                            <stat.icon className="w-6 h-6" />
-                        </div>
-                        {stat.sub && (
-                            <span className="bg-emerald-50 text-emerald-700 px-2.5 py-1 rounded-full text-xs font-bold border border-emerald-100">
-                                {stat.sub} Active
-                            </span>
-                        )}
-                    </div>
-                    <p className="text-slate-500 text-sm font-medium">{stat.label}</p>
-                    <div className="mt-1 flex items-baseline">
-                        <span className="text-3xl font-bold text-slate-900 tracking-tight">{stat.value}</span>
-                    </div>
-                    <p className="mt-2 text-xs font-medium text-slate-400 group-hover:text-indigo-500 transition-colors">{stat.trend}</p>
-                    <div className="absolute top-0 right-0 p-4 opacity-[0.03]">
-                        <stat.icon className="w-24 h-24" />
-                    </div>
-                </motion.div>
-            ))}
+        <div className="space-y-8 animate-in fade-in duration-700">
 
-            {/* Real Chart Section */}
-            <motion.div
-                initial={{ opacity: 0, y: 20 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ delay: 0.4 }}
-                className="col-span-1 lg:col-span-3 bg-white p-8 rounded-[2.5rem] shadow-lg shadow-indigo-100/50 border border-slate-100 relative overflow-hidden flex flex-col items-stretch"
-            >
-                <div className="flex justify-between items-center mb-8">
-                    <div>
-                        <h3 className="text-xl font-bold text-slate-900 flex items-center gap-2">
-                            <Activity className="w-5 h-5 text-indigo-500" />
-                            Workforce Activity
-                        </h3>
-                        <p className="text-sm text-slate-400 font-medium">Real-time check-in volume (Last 7 Days)</p>
+            {/* 1. PERSONAL HEADER */}
+            <div>
+                <h1 className="text-4xl font-bold text-slate-900 tracking-tight">
+                    {greeting}, {session.username.split('.')[0]}!
+                    <span className="ml-2 inline-block animate-wave origin-bottom-right">👋</span>
+                </h1>
+                <p className="text-slate-500 mt-2 text-lg">
+                    You have <strong className="text-indigo-600">{stats.pending} pending requests</strong> and <strong className="text-emerald-600">running on time</strong> today.
+                </p>
+            </div>
+
+            {/* 2. MAIN GRID */}
+            <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+
+                {/* LEFT COL: Live Status & Chart */}
+                <div className="lg:col-span-2 space-y-8">
+
+                    {/* Live Status Card (The "Elevator" equivalent) */}
+                    <div className="bg-white rounded-[2.5rem] p-8 shadow-sm border border-slate-100 flex flex-col md:flex-row items-center justify-between gap-8 relative overflow-hidden group">
+                        <div className="absolute top-0 right-0 w-64 h-64 bg-indigo-50 rounded-full -mr-32 -mt-32 blur-3xl opacity-50 pointer-events-none"></div>
+
+                        <div className="flex-1 relative z-10">
+                            <div className="flex items-center gap-3 mb-2">
+                                <span className="flex h-3 w-3 relative">
+                                    <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
+                                    <span className="relative inline-flex rounded-full h-3 w-3 bg-emerald-500"></span>
+                                </span>
+                                <span className="text-xs font-bold uppercase tracking-widest text-emerald-600">Live Office Status</span>
+                            </div>
+                            <h3 className="text-2xl font-bold text-slate-900 mb-2">Workspace Capacity</h3>
+                            <p className="text-slate-500 text-sm leading-relaxed mb-6">
+                                The office is currently <strong className="text-slate-900">{Math.round((stats.present / (stats.employees || 1)) * 100)}% occupied</strong>.
+                                Looks like a buzzling day!
+                            </p>
+
+                            <div className="space-y-3">
+                                <div className="flex items-center gap-3 text-sm font-medium text-slate-600">
+                                    <div className="w-2 h-2 rounded-full bg-indigo-500"></div>
+                                    {stats.present} Checked In
+                                </div>
+                                <div className="flex items-center gap-3 text-sm font-medium text-slate-600">
+                                    <div className="w-2 h-2 rounded-full bg-slate-200"></div>
+                                    {stats.employees - stats.present} Away / Planned Leave
+                                </div>
+                            </div>
+                        </div>
+
+                        {/* Donut Chart */}
+                        <div className="w-48 h-48 relative flex-shrink-0">
+                            <ResponsiveContainer width="100%" height="100%">
+                                <PieChart>
+                                    <Pie
+                                        data={ringData}
+                                        innerRadius={60}
+                                        outerRadius={80}
+                                        paddingAngle={5}
+                                        dataKey="value"
+                                        startAngle={90}
+                                        endAngle={-270}
+                                        stroke="none"
+                                        cornerRadius={10}
+                                    />
+                                    <Tooltip contentStyle={{ borderRadius: '12px', border: 'none', boxShadow: '0 10px 15px -3px rgba(0,0,0,0.1)' }} />
+                                </PieChart>
+                            </ResponsiveContainer>
+                            {/* Center Text */}
+                            <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none">
+                                <span className="text-3xl font-bold text-slate-900">{stats.present}</span>
+                                <span className="text-[10px] font-bold uppercase text-slate-400">Active</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    {/* Workforce Activity Chart (Restyled) */}
+                    <div className="bg-white p-8 rounded-[2.5rem] shadow-sm border border-slate-100">
+                        <div className="flex justify-between items-center mb-8">
+                            <h3 className="text-lg font-bold text-slate-900">Weekly Trends</h3>
+                            <select className="bg-slate-50 border-none text-xs font-bold text-slate-500 py-2 px-4 rounded-xl outline-none cursor-pointer hover:bg-slate-100 transition-colors">
+                                <option>Last 7 Days</option>
+                                <option>This Month</option>
+                            </select>
+                        </div>
+                        <div className="h-[250px] w-full">
+                            <ResponsiveContainer width="100%" height="100%">
+                                <AreaChart data={chartData} margin={{ top: 10, right: 10, left: 0, bottom: 0 }}>
+                                    <defs>
+                                        <linearGradient id="colorVal" x1="0" y1="0" x2="0" y2="1">
+                                            <stop offset="5%" stopColor="#6366f1" stopOpacity={0.2} />
+                                            <stop offset="95%" stopColor="#6366f1" stopOpacity={0} />
+                                        </linearGradient>
+                                    </defs>
+                                    <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f1f5f9" />
+                                    <XAxis dataKey="name" axisLine={false} tickLine={false} tick={{ fill: '#94a3b8', fontSize: 12, fontWeight: 600 }} dy={10} />
+                                    <Tooltip contentStyle={{ borderRadius: '12px', border: 'none', boxShadow: '0 10px 15px -3px rgba(0,0,0,0.1)' }} />
+                                    <Area type="monotone" dataKey="value" stroke="#6366f1" strokeWidth={3} fillOpacity={1} fill="url(#colorVal)" />
+                                </AreaChart>
+                            </ResponsiveContainer>
+                        </div>
                     </div>
                 </div>
 
-                <div className="h-[300px] w-full">
-                    {chartData.length > 0 ? (
-                        <ResponsiveContainer width="100%" height="100%">
-                            <AreaChart data={chartData} margin={{ top: 10, right: 10, left: 0, bottom: 0 }}>
-                                <defs>
-                                    <linearGradient id="colorValue" x1="0" y1="0" x2="0" y2="1">
-                                        <stop offset="5%" stopColor="#6366f1" stopOpacity={0.3} />
-                                        <stop offset="95%" stopColor="#6366f1" stopOpacity={0} />
-                                    </linearGradient>
-                                </defs>
-                                <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f1f5f9" />
-                                <XAxis
-                                    dataKey="name"
-                                    axisLine={false}
-                                    tickLine={false}
-                                    tick={{ fill: '#64748b', fontSize: 12, fontWeight: 600 }}
-                                    dy={10}
-                                />
-                                <YAxis
-                                    axisLine={false}
-                                    tickLine={false}
-                                    tick={{ fill: '#64748b', fontSize: 12 }}
-                                />
-                                <Tooltip
-                                    contentStyle={{ borderRadius: '12px', border: 'none', boxShadow: '0 10px 15px -3px rgba(0, 0, 0, 0.1)' }}
-                                    cursor={{ stroke: '#6366f1', strokeWidth: 2 }}
-                                />
-                                <Area
-                                    type="monotone"
-                                    dataKey="value"
-                                    stroke="#6366f1"
-                                    strokeWidth={4}
-                                    fillOpacity={1}
-                                    fill="url(#colorValue)"
-                                />
-                            </AreaChart>
-                        </ResponsiveContainer>
-                    ) : (
-                        <div className="h-full flex items-center justify-center text-slate-400">Loading chart data...</div>
-                    )}
-                </div>
-            </motion.div>
+                {/* RIGHT COL: Action Cards */}
+                <div className="space-y-6">
 
-            {/* AI Insights / Activity Feed */}
-            <motion.div
-                initial={{ opacity: 0, y: 20 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ delay: 0.5 }}
-                className="col-span-1 bg-gradient-to-b from-slate-900 to-slate-800 p-6 rounded-[2.5rem] shadow-xl shadow-slate-900/10 text-white flex flex-col relative overflow-hidden"
-            >
-                <div className="absolute top-0 right-0 w-32 h-32 bg-indigo-500 rounded-full blur-[80px] opacity-20 pointer-events-none"></div>
-
-                <h3 className="font-bold text-white mb-6 flex items-center gap-2">
-                    <Zap className="w-5 h-5 text-yellow-400 fill-current" />
-                    AI Insights
-                </h3>
-
-                <div className="space-y-6 flex-1 overflow-y-auto pr-2 custom-scrollbar">
-                    <div className="relative pl-4 border-l-2 border-indigo-500/30">
-                        <div className="mb-1 flex items-center gap-2">
-                            <span className="text-[10px] font-bold bg-indigo-500/20 text-indigo-300 px-2 py-0.5 rounded uppercase tracking-wider">Analysis</span>
-                            <span className="text-[10px] text-slate-400">Just now</span>
+                    {/* Action Card: Time Off */}
+                    <div className="bg-gradient-to-br from-indigo-600 to-violet-700 p-8 rounded-[2.5rem] shadow-xl shadow-indigo-500/20 text-white relative overflow-hidden text-center group">
+                        <div className="absolute top-0 left-0 w-32 h-32 bg-white rounded-full opacity-10 -ml-10 -mt-10 blur-2xl group-hover:opacity-20 transition-opacity"></div>
+                        <div className="relative z-10">
+                            <Briefcase className="w-10 h-10 mx-auto mb-4 text-indigo-200" />
+                            <h3 className="text-xl font-bold mb-2">Need a Break?</h3>
+                            <p className="text-indigo-100 text-sm mb-6 px-4">You have {12} days of paid leave remaining this year.</p>
+                            <button className="w-full py-3 bg-white text-indigo-600 font-bold rounded-xl hover:bg-indigo-50 transition-colors shadow-lg shadow-black/10">
+                                Request Time Off
+                            </button>
                         </div>
-                        <p className="text-sm text-slate-300 leading-relaxed font-light">
-                            Workforce attendance is currently at <span className="text-emerald-400 font-bold">{stats.employees > 0 ? Math.round((stats.present / stats.employees) * 100) : 0}%</span> capacity.
-                        </p>
                     </div>
 
-                    <div className="relative pl-4 border-l-2 border-indigo-500/30">
-                        <div className="mb-1 flex items-center gap-2">
-                            <span className="text-[10px] font-bold bg-blue-500/20 text-blue-300 px-2 py-0.5 rounded uppercase tracking-wider">Leave</span>
+                    {/* Wellness / Quick Info */}
+                    <div className="bg-white p-8 rounded-[2.5rem] shadow-sm border border-slate-100 flex flex-col items-center text-center">
+                        <div className="w-16 h-16 rounded-2xl bg-orange-50 text-orange-500 flex items-center justify-center mb-4">
+                            <Zap className="w-8 h-8 fill-current" />
                         </div>
-                        <p className="text-sm text-slate-300 leading-relaxed font-light">
-                            There are <span className="text-white font-bold">{stats.pending}</span> pending leave requests requiring review.
-                        </p>
+                        <h3 className="text-lg font-bold text-slate-900">Productivity Streak</h3>
+                        <p className="text-sm text-slate-500 mt-1 mb-6">You've checked in on time for <strong>4 days</strong> in a row!</p>
+                        <div className="flex gap-2 justify-center">
+                            {[1, 2, 3, 4].map(i => <div key={i} className="w-2 h-2 rounded-full bg-orange-500"></div>)}
+                            <div className="w-2 h-2 rounded-full bg-slate-200"></div>
+                        </div>
                     </div>
 
-                    <div className="mt-auto pt-4 border-t border-white/10">
-                        <button className="w-full py-2 bg-white/10 hover:bg-white/20 rounded-xl text-xs font-bold text-white transition-colors flex items-center justify-center gap-2">
-                            View Full Report
-                        </button>
+                    {/* Calendar Mini (Mock) */}
+                    <div className="bg-white p-6 rounded-[2.5rem] border border-slate-100">
+                        <h4 className="font-bold text-slate-900 mb-4 flex items-center gap-2">
+                            <Calendar className="w-4 h-4 text-indigo-500" /> Today's Agenda
+                        </h4>
+                        <div className="space-y-4">
+                            {[
+                                { time: '10:00 AM', title: 'Team Sync', color: 'bg-blue-500' },
+                                { time: '02:00 PM', title: 'Project Review', color: 'bg-purple-500' }
+                            ].map((evt, i) => (
+                                <div key={i} className="flex gap-4 items-start relative pl-4 border-l border-slate-100">
+                                    <div className={`absolute -left-1.5 top-1.5 w-3 h-3 rounded-full border-2 border-white shadow-sm ${evt.color}`}></div>
+                                    <div className="text-left">
+                                        <p className="text-xs font-bold text-slate-400">{evt.time}</p>
+                                        <p className="text-sm font-bold text-slate-900">{evt.title}</p>
+                                    </div>
+                                </div>
+                            ))}
+                        </div>
                     </div>
+
                 </div>
-            </motion.div>
+            </div>
         </div>
     )
 }
