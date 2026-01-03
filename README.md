@@ -1,94 +1,57 @@
-# Dayflow - Human Resource Management System
+# Dayflow HRMS
 
-## 🎯 Hackathon Project - Odoo HRMS
+Complete Human Resource Management System built on Odoo 17.
 
-A comprehensive Human Resource Management System built with Odoo framework.
+## Features
 
-## 📋 Core Features
+**Employee Management**
+- Employee records with comprehensive details
+- Employment status tracking
+- Department and position management
 
-### 1. Employee Management Module
-- Add, edit, and delete employee records
-- Store employee details (name, contact, department, position, salary)
-- Employee profile management
-- Search and filter functionality
+**Attendance System**
+- Check-in/check-out tracking
+- Automatic late detection
+- Overtime calculation
+- Attendance reports
 
-### 2. Attendance Tracking
-- Daily attendance marking (check-in/check-out)
-- Attendance history and reports
-- Leave management integration
-- Real-time attendance dashboard
-
-### 3. Payroll Management
-- Salary calculation based on attendance
-- Deductions and bonuses
-- Payslip generation
-- Monthly/yearly payroll reports
-
-### 4. Leave Management
-- Leave application system
-- Leave approval workflow
+**Leave Management**
+- Leave applications and approvals
+- Multiple leave types
+- Half-day leave support
 - Leave balance tracking
-- Multiple leave types (sick, casual, earned)
 
-### 5. Performance Tracking
-- Performance review system
+**Payroll**
+- Attendance-based salary calculation
+- Overtime pay (1.5x rate)
+- Bonuses and deductions
+- Automated payslip generation
+
+**Performance Reviews**
+- Multi-criteria performance ratings
 - Goal setting and tracking
-- Feedback mechanism
-- Performance reports and analytics
+- Employee feedback system
+- Performance analytics
 
-## 🛠️ Tech Stack
+## Installation
 
-- **Framework:** Odoo 17
-- **Backend:** Python 3.11
-- **Database:** PostgreSQL
-- **Frontend:** Odoo Web Framework (XML/JS/OWL)
+See [INSTALLATION.md](INSTALLATION.md) for detailed setup instructions.
 
-## 🚀 Installation
-
-### Prerequisites
-- Python 3.11+
-- PostgreSQL
-- pip
-
-### Setup Instructions
-
-1. Clone the repository:
+Quick start:
 ```bash
-git clone https://github.com/palgandhi/Odoo-HRMS.git
-cd Odoo-HRMS
-```
-
-2. Install Odoo and dependencies:
-```bash
+# Install dependencies
 pip install -r requirements.txt
+
+# Run Odoo
+python3 odoo-bin --addons-path=addons,custom_addons -d dayflow_db -i dayflow_hrms
 ```
 
-3. Start PostgreSQL service
+## Tech Stack
 
-4. Run Odoo:
-```bash
-python3 odoo-bin --addons-path=addons,custom_addons -d dayflow_db
-```
+- Odoo 17
+- Python 3.11
+- PostgreSQL
 
-## 📁 Project Structure
+## License
 
-```
-Odoo-HRMS/
-├── custom_addons/
-│   └── dayflow_hrms/          # Main custom module
-│       ├── models/            # Database models
-│       ├── views/             # UI views
-│       ├── security/          # Access rights
-│       ├── data/              # Demo/default data
-│       └── __manifest__.py    # Module configuration
-├── requirements.txt
-└── README.md
-```
-
-## 👥 Team
-
-Built for Odoo Hackathon 2026
-
-## 📄 License
-
-MIT License
+MIT

@@ -1,95 +1,57 @@
-# Dayflow HRMS - Installation & Setup Guide
+# Installation Guide
 
-## 📋 Prerequisites
+## Prerequisites
 
-Before installing Dayflow HRMS, ensure you have:
+- Python 3.11+
+- PostgreSQL
+- Git
 
-1. **Python 3.11+** installed
-2. **PostgreSQL** database server running
-3. **Git** for version control
-4. **pip** package manager
+## Setup
 
-## 🚀 Quick Start Installation
-
-### Step 1: Install Odoo 17
+### 1. Install Odoo 17
 
 ```bash
-# Install system dependencies (Ubuntu/Debian)
-sudo apt-get update
-sudo apt-get install -y python3-pip python3-dev libxml2-dev libxslt1-dev \
-    zlib1g-dev libsasl2-dev libldap2-dev build-essential libssl-dev \
-    libffi-dev libmysqlclient-dev libjpeg-dev libpq-dev libjpeg8-dev \
-    liblcms2-dev libblas-dev libatlas-base-dev npm
-
-# For macOS
-brew install postgresql python@3.11 node
-```
-
-### Step 2: Download Odoo 17
-
-```bash
-cd ~/
-git clone https://www.github.com/odoo/odoo --depth 1 --branch 17.0 --single-branch
+# Clone Odoo
+git clone https://github.com/odoo/odoo --depth 1 --branch 17.0
 cd odoo
-```
 
-### Step 3: Install Python Dependencies
-
-```bash
+# Install Python dependencies
 pip3 install -r requirements.txt
 ```
 
-### Step 4: Setup PostgreSQL
+### 2. Setup PostgreSQL
 
 ```bash
 # Start PostgreSQL
-# On Ubuntu/Debian:
-sudo service postgresql start
-
-# On macOS:
+# macOS:
 brew services start postgresql
 
-# Create PostgreSQL user (if not exists)
-sudo -u postgres createuser -s $USER
+# Ubuntu/Debian:
+sudo service postgresql start
+
+# Create database user (if needed)
+createuser -s $USER
 ```
 
-### Step 5: Clone Dayflow HRMS Module
+### 3. Run Odoo with Dayflow HRMS
 
 ```bash
-# Navigate to your workspace
-cd /Users/palgandhi/Desktop/Odoo
-
-# The module is already in custom_addons/dayflow_hrms
+# From the odoo directory
+python3 odoo-bin --addons-path=addons,/path/to/Odoo-HRMS/custom_addons \
+    -d dayflow_db -i dayflow_hrms
 ```
 
-### Step 6: Run Odoo with Dayflow HRMS
+Replace `/path/to/Odoo-HRMS` with your actual project path.
 
-```bash
-# From the Odoo directory
-cd ~/odoo
+### 4. Access the System
 
-# Run Odoo with custom addons path
-python3 odoo-bin --addons-path=addons,/Users/palgandhi/Desktop/Odoo/custom_addons \
-    -d dayflow_db -i dayflow_hrms --db-filter=dayflow_db
-```
+Open browser: `http://localhost:8069`
 
-**First-time setup:**
-- Database: `dayflow_db`
-- Email: `admin@dayflow.com`
-- Password: `admin` (change after first login)
+Default credentials:
+- Email: admin
+- Password: admin
 
-### Step 7: Access Dayflow HRMS
-
-Open your browser and navigate to:
-```
-http://localhost:8069
-```
-
-Login with:
-- **Email:** admin@dayflow.com
-- **Password:** admin
-
-## 📦 Alternative: Docker Installation
+## Docker Installation (Alternative)
 
 ```bash
 # Create docker-compose.yml
@@ -103,142 +65,37 @@ services:
       - "8069:8069"
     volumes:
       - ./custom_addons:/mnt/extra-addons
-      - odoo-data:/var/lib/odoo
-    environment:
-      - HOST=db
-      - USER=odoo
-      - PASSWORD=odoo
   db:
     image: postgres:15
     environment:
-      - POSTGRES_DB=postgres
       - POSTGRES_PASSWORD=odoo
-      - POSTGRES_USER=odoo
-    volumes:
-      - db-data:/var/lib/postgresql/data
 
-volumes:
-  odoo-data:
-  db-data:
-
-# Run with Docker
+# Run
 docker-compose up -d
 ```
 
-## 🔧 Configuration
+## Updating the Module
 
-### Enable Developer Mode
-
-1. Go to Settings
-2. Scroll to bottom
-3. Click "Activate the developer mode"
-
-### Install Required Modules
-
-The following Odoo modules will be automatically installed:
-- HR (base module)
-- HR Attendance
-- HR Holidays (Leave Management)
-- HR Payroll
-- HR Contract
-
-## 📊 Module Features
-
-### 1. Employee Management
-- Navigate to: **Dayflow HRMS → Employees → All Employees**
-- Add new employees with extended fields
-- Track employment status, joining date, salary
-
-### 2. Attendance Tracking
-- Navigate to: **Dayflow HRMS → Attendance → Attendance Tracking**
-- Mark check-in/check-out
-- View attendance reports with late detection
-
-### 3. Leave Management
-- Navigate to: **Dayflow HRMS → Leave Management → Leave Requests**
-- Apply for leave with reasons
-- Approve/reject leave requests
-- Track leave balances
-
-### 4. Payroll Management
-- Navigate to: **Dayflow HRMS → Payroll → Payslips**
-- Generate payslips based on attendance
-- Calculate overtime, bonuses, deductions
-- View payroll reports
-
-### 5. Performance Tracking
-- Navigate to: **Dayflow HRMS → Performance → Performance Reviews**
-- Create performance reviews
-- Set and track goals
-- Generate performance reports
-
-## 🐛 Troubleshooting
-
-### Module Not Showing Up
+After code changes:
 
 ```bash
-# Update module list
-# Go to Apps → Update Apps List
-# Search for "Dayflow HRMS" and install
-```
-
-### Database Connection Error
-
-```bash
-# Check PostgreSQL is running
-sudo service postgresql status
-
-# Restart PostgreSQL
-sudo service postgresql restart
-```
-
-### Permission Errors
-
-```bash
-# Fix file permissions
-chmod -R 755 /Users/palgandhi/Desktop/Odoo/custom_addons
-```
-
-## 📝 Development Mode
-
-To run in development mode with auto-reload:
-
-```bash
-python3 odoo-bin --addons-path=addons,/Users/palgandhi/Desktop/Odoo/custom_addons \
-    -d dayflow_db --dev=all
-```
-
-## 🔄 Updating the Module
-
-After making changes to the code:
-
-1. Restart Odoo server
-2. Go to Apps
-3. Search for "Dayflow HRMS"
-4. Click "Upgrade"
-
-Or via command line:
-
-```bash
-python3 odoo-bin --addons-path=addons,/Users/palgandhi/Desktop/Odoo/custom_addons \
+python3 odoo-bin --addons-path=addons,/path/to/custom_addons \
     -d dayflow_db -u dayflow_hrms
 ```
 
-## 📧 Support
+## Troubleshooting
 
-For issues or questions:
-- GitHub: https://github.com/palgandhi/Odoo-HRMS
-- Email: support@dayflow.com
+**Module not showing:**
+- Go to Apps → Update Apps List
+- Search for "Dayflow HRMS"
 
-## 🎯 Next Steps
+**Database errors:**
+```bash
+dropdb dayflow_db
+createdb dayflow_db
+```
 
-1. Configure company information
-2. Add departments
-3. Create employee records
-4. Set up leave types
-5. Configure payroll rules
-6. Start using the system!
-
----
-
-**Built for Odoo Hackathon 2026** 🚀
+**Permission errors:**
+```bash
+chmod -R 755 custom_addons
+```
