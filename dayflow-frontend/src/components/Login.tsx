@@ -1,20 +1,51 @@
 import React, { useState } from 'react';
 import { motion } from 'framer-motion';
-import { User, Lock, ArrowRight, Loader } from 'lucide-react';
+import { User, Lock, ArrowRight, Loader, AlertCircle } from 'lucide-react';
+import { login, checkUserGroup } from '../services/odoo';
+import type { UserSession } from '../App';
 
-export default function Login({ onLogin }: { onLogin: () => void }) {
+interface LoginProps {
+    onLogin: (session: UserSession) => void;
+}
+
+export default function Login({ onLogin }: LoginProps) {
     const [loading, setLoading] = useState(false);
-    const [email, setEmail] = useState('');
-    const [password, setPassword] = useState('');
+    const [email, setEmail] = useState('admin');
+    const [password, setPassword] = useState('admin');
+    const [error, setError] = useState('');
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
         setLoading(true);
-        // Simulate network request for UI demo
-        setTimeout(() => {
+        setError('');
+
+        try {
+            // Hardcoded DB name for hackathon simplicity
+            const dbName = 'dayflow_db';
+
+            const uid = await login(dbName, email, password);
+
+            if (typeof uid === 'number') {
+                // Successful login - Check Permissions
+                const isSystemAdmin = await checkUserGroup(uid, password, 'base.group_system');
+
+                onLogin({
+                    uid,
+                    username: email,
+                    password: password,
+                    db: dbName,
+                    isAdmin: isSystemAdmin
+                });
+            } else {
+                setError('Invalid credentials. Please try again.');
+                console.error('Login failed, returned:', uid);
+            }
+        } catch (err: any) {
+            console.error('Login Error:', err);
+            setError('Connection failed. Is Odoo running?');
+        } finally {
             setLoading(false);
-            onLogin(); // Proceed to dashboard
-        }, 1500);
+        }
     };
 
     return (
@@ -58,21 +89,33 @@ export default function Login({ onLogin }: { onLogin: () => void }) {
                     className="w-full max-w-md"
                 >
                     <div className="text-center lg:text-left mb-10">
+                        <div className="lg:hidden mb-6 text-center">
+                            <span className="text-2xl font-bold text-blue-600">Dayflow HRMS</span>
+                        </div>
                         <h2 className="text-3xl font-bold text-slate-900">Welcome Back</h2>
                         <p className="text-slate-500 mt-2">Please sign in to your dashboard</p>
                     </div>
 
                     <form onSubmit={handleSubmit} className="space-y-6">
+
+                        {/* Error Message */}
+                        {error && (
+                            <div className="bg-red-50 text-red-600 p-4 rounded-xl flex items-center text-sm border border-red-100">
+                                <AlertCircle className="w-5 h-5 mr-2 flex-shrink-0" />
+                                {error}
+                            </div>
+                        )}
+
                         <div>
-                            <label className="block text-sm font-medium text-slate-700 mb-2">Email Address</label>
+                            <label className="block text-sm font-medium text-slate-700 mb-2">Username / Email</label>
                             <div className="relative">
                                 <User className="absolute left-3 top-3 h-5 w-5 text-slate-400" />
                                 <input
-                                    type="email"
+                                    type="text"
                                     value={email}
                                     onChange={(e) => setEmail(e.target.value)}
                                     className="w-full pl-10 pr-4 py-3 border border-slate-200 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all outline-none"
-                                    placeholder="admin@dayflow.com"
+                                    placeholder="admin"
                                     required
                                 />
                             </div>
@@ -93,14 +136,6 @@ export default function Login({ onLogin }: { onLogin: () => void }) {
                             </div>
                         </div>
 
-                        <div className="flex items-center justify-between text-sm">
-                            <label className="flex items-center text-slate-600 cursor-pointer hover:text-slate-900">
-                                <input type="checkbox" className="mr-2 rounded border-gray-300 text-blue-600 focus:ring-blue-500" />
-                                Remember me
-                            </label>
-                            <a href="#" className="font-medium text-blue-600 hover:text-blue-700">Forgot password?</a>
-                        </div>
-
                         <button
                             type="submit"
                             disabled={loading}
@@ -109,7 +144,7 @@ export default function Login({ onLogin }: { onLogin: () => void }) {
                             {loading ? (
                                 <>
                                     <Loader className="w-5 h-5 animate-spin" />
-                                    <span>Signing in...</span>
+                                    <span>Checking Credentials...</span>
                                 </>
                             ) : (
                                 <>
@@ -118,11 +153,10 @@ export default function Login({ onLogin }: { onLogin: () => void }) {
                                 </>
                             )}
                         </button>
+                        <div className="text-xs text-center text-slate-400 mt-4">
+                            Default: admin / admin
+                        </div>
                     </form>
-
-                    <p className="mt-8 text-center text-sm text-slate-500">
-                        Don't have an account? <a href="#" className="font-medium text-blue-600 hover:text-blue-700">Contact HR</a>
-                    </p>
                 </motion.div>
             </div>
         </div>

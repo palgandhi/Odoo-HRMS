@@ -1,9 +1,15 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
     Users, Calendar, Briefcase, BarChart, DollarSign,
     Settings, LogOut, Menu, Bell, Search, LayoutDashboard
 } from 'lucide-react';
+import type { UserSession } from '../App';
+import EmployeeList from './Employees/EmployeeList';
+import AttendanceView from './Attendance/AttendanceView';
+import LeaveView from './Leave/LeaveView';
+import PerformanceView from './Performance/PerformanceView';
+import PayrollView from './Payroll/PayrollView';
 
 // Define the navigation items
 const NAV_ITEMS = [
@@ -15,7 +21,12 @@ const NAV_ITEMS = [
     { id: 'performance', label: 'Performance', icon: BarChart },
 ];
 
-export default function Dashboard({ onLogout }: { onLogout: () => void }) {
+interface DashboardProps {
+    session: UserSession;
+    onLogout: () => void;
+}
+
+export default function Dashboard({ session, onLogout }: DashboardProps) {
     const [activeTab, setActiveTab] = useState('dashboard');
     const [isSidebarOpen, setSidebarOpen] = useState(true);
 
@@ -42,8 +53,8 @@ export default function Dashboard({ onLogout }: { onLogout: () => void }) {
                             key={item.id}
                             onClick={() => setActiveTab(item.id)}
                             className={`w-full flex items-center px-4 py-3.5 rounded-xl transition-all ${activeTab === item.id
-                                    ? 'bg-blue-600 text-white shadow-lg shadow-blue-900/50'
-                                    : 'text-slate-400 hover:bg-slate-800 hover:text-white'
+                                ? 'bg-blue-600 text-white shadow-lg shadow-blue-900/50'
+                                : 'text-slate-400 hover:bg-slate-800 hover:text-white'
                                 }`}
                         >
                             <item.icon className={`w-5 h-5 ${isSidebarOpen ? 'mr-4' : 'mx-auto'}`} />
@@ -92,8 +103,8 @@ export default function Dashboard({ onLogout }: { onLogout: () => void }) {
                         </button>
                         <div className="flex items-center cursor-pointer hover:opacity-80 transition-opacity">
                             <div className="text-right mr-4 hidden md:block">
-                                <p className="text-sm font-bold text-slate-900">Admin User</p>
-                                <p className="text-xs text-slate-500">HR Manager</p>
+                                <p className="text-sm font-bold text-slate-900">{session.username}</p>
+                                <p className="text-xs text-slate-500">Administrator</p>
                             </div>
                             <div className="w-10 h-10 bg-gradient-to-tr from-blue-500 to-green-500 rounded-full border-2 border-white shadow-md"></div>
                         </div>
@@ -112,10 +123,16 @@ export default function Dashboard({ onLogout }: { onLogout: () => void }) {
                             </div>
                         </div>
 
-                        {/* Placeholder for content */}
+                        {/* Content Switcher */}
                         <div className="grid gap-6">
-                            {activeTab === 'dashboard' && <DashboardPlaceHolder />}
-                            {activeTab !== 'dashboard' && (
+                            {activeTab === 'dashboard' && <DashboardStats session={session} />}
+                            {activeTab === 'employees' && <EmployeeList session={session} />}
+                            {activeTab === 'attendance' && <AttendanceView session={session} />}
+                            {activeTab === 'leave' && <LeaveView session={session} />}
+                            {activeTab === 'payroll' && <PayrollView session={session} />}
+                            {activeTab === 'performance' && <PerformanceView session={session} />}
+
+                            {activeTab !== 'dashboard' && activeTab !== 'employees' && activeTab !== 'attendance' && activeTab !== 'leave' && activeTab !== 'performance' && activeTab !== 'payroll' && (
                                 <div className="bg-white rounded-2xl p-12 text-center border border-slate-200 border-dashed">
                                     <div className="w-20 h-20 bg-slate-50 rounded-full mx-auto flex items-center justify-center mb-6">
                                         <Settings className="w-10 h-10 text-slate-400" />
@@ -134,16 +151,64 @@ export default function Dashboard({ onLogout }: { onLogout: () => void }) {
     );
 }
 
-// Simple placeholder widget for the dashboard
-function DashboardPlaceHolder() {
+// Real Stats Component
+import { executeKw } from '../services/odoo';
+
+function DashboardStats({ session }: { session: UserSession }) {
+    const [stats, setStats] = useState({
+        employees: 0,
+        present: 0,
+        leave: 0,
+        pending: 0,
+        loading: true
+    });
+
+    useEffect(() => {
+        const fetchStats = async () => {
+            try {
+                // 1. Total Employees
+                const totalEmp = await executeKw(session.uid, session.password, 'hr.employee', 'search_count', [[]]);
+
+                // 2. Present Today (Active Check-ins)
+                const present = await executeKw(session.uid, session.password, 'hr.attendance', 'search_count', [[['check_out', '=', false]]]);
+
+                // 3. On Leave (Date range overlap)
+                const now = new Date().toISOString().split('T')[0];
+                const onLeave = await executeKw(session.uid, session.password, 'hr.leave', 'search_count',
+                    [[['state', '=', 'validate'], ['date_from', '<=', now], ['date_to', '>=', now]]]
+                );
+
+                // 4. Pending Requests
+                const pending = await executeKw(session.uid, session.password, 'hr.leave', 'search_count', [[['state', '=', 'confirm']]]);
+
+                setStats({
+                    employees: totalEmp,
+                    present: present,
+                    leave: onLeave,
+                    pending: pending,
+                    loading: false
+                });
+            } catch (err) {
+                console.error(err);
+                setStats(prev => ({ ...prev, loading: false }));
+            }
+        };
+
+        fetchStats();
+    }, [session]);
+
+    if (stats.loading) return <div className="p-12 text-center text-slate-400">Loading Dashboard...</div>;
+
+    const cards = [
+        { label: 'Total Employees', value: stats.employees.toString(), color: 'blue' },
+        { label: 'Present Today', value: stats.present.toString(), color: 'green', sub: stats.employees > 0 ? `${Math.round((stats.present / stats.employees) * 100)}%` : '0%' },
+        { label: 'On Leave', value: stats.leave.toString(), color: 'orange' },
+        { label: 'Pending Requests', value: stats.pending.toString(), color: 'purple' },
+    ];
+
     return (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-            {[
-                { label: 'Total Employees', value: '156', color: 'blue' },
-                { label: 'Present Today', value: '142', color: 'green' },
-                { label: 'On Leave', value: '8', color: 'orange' },
-                { label: 'Pending Requests', value: '12', color: 'purple' },
-            ].map((stat, i) => (
+            {cards.map((stat, i) => (
                 <motion.div
                     key={i}
                     initial={{ opacity: 0, y: 20 }}
@@ -154,19 +219,21 @@ function DashboardPlaceHolder() {
                     <p className="text-slate-500 text-sm font-medium">{stat.label}</p>
                     <div className="mt-4 flex items-baseline">
                         <span className="text-3xl font-bold text-slate-900">{stat.value}</span>
-                        {i === 1 && <span className="ml-2 text-sm text-green-500 font-medium">92%</span>}
+                        {stat.sub && <span className="ml-2 text-sm text-green-500 font-medium">{stat.sub}</span>}
                     </div>
                 </motion.div>
             ))}
 
-            {/* Chart Section */}
+            {/* Chart Section - Keeping Placeholder for now as charting lib requires more setup */}
             <motion.div
                 initial={{ opacity: 0, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ delay: 0.4 }}
-                className="col-span-1 lg:col-span-3 bg-white p-6 rounded-2xl shadow-sm border border-slate-100 h-96 flex items-center justify-center"
+                className="col-span-1 lg:col-span-3 bg-white p-6 rounded-2xl shadow-sm border border-slate-100 h-96 flex flex-col justify-center items-center text-center"
             >
-                <p className="text-slate-400">Activity Chart Visualization</p>
+                <BarChart className="w-12 h-12 text-slate-200 mb-4" />
+                <h3 className="text-lg font-bold text-slate-700">Analytics Dashboard</h3>
+                <p className="text-slate-400">Activity visualization coming in v2.0</p>
             </motion.div>
 
             {/* Activity Feed */}
@@ -176,17 +243,15 @@ function DashboardPlaceHolder() {
                 transition={{ delay: 0.5 }}
                 className="col-span-1 bg-white p-6 rounded-2xl shadow-sm border border-slate-100"
             >
-                <h3 className="font-bold text-slate-900 mb-4">Recent Activity</h3>
+                <h3 className="font-bold text-slate-900 mb-4">Live Updates</h3>
                 <div className="space-y-6">
-                    {[1, 2, 3, 4].map((_, i) => (
-                        <div key={i} className="flex gap-4">
-                            <div className="w-2 h-2 mt-2 rounded-full bg-blue-500 shrink-0" />
-                            <div>
-                                <p className="text-xs text-slate-400">10:42 AM</p>
-                                <p className="text-sm text-slate-600 mt-1">New employee <span className="font-medium text-slate-900">Sarah Smith</span> onboarded.</p>
-                            </div>
+                    <div className="flex gap-4">
+                        <div className="w-2 h-2 mt-2 rounded-full bg-green-500 shrink-0" />
+                        <div>
+                            <p className="text-xs text-slate-400">Just Now</p>
+                            <p className="text-sm text-slate-600 mt-1">Dashboard data synced with <span className="font-bold">Odoo Backend</span>.</p>
                         </div>
-                    ))}
+                    </div>
                 </div>
             </motion.div>
         </div>

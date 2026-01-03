@@ -2,22 +2,33 @@ import { useState } from 'react';
 import Login from './components/Login';
 import Dashboard from './components/Dashboard';
 
-function App() {
-  const [isAuthenticated, setIsAuthenticated] = useState(false);
+// Define the User Session type
+export interface UserSession {
+  uid: number;
+  username: string;
+  password: string; // Storing password/key in memory for API calls
+  db: string;
+  isAdmin: boolean;
+}
 
-  // Simple authentication flow
-  const handleLogin = () => {
-    setIsAuthenticated(true);
+function App() {
+  const [session, setSession] = useState<UserSession | null>(null);
+
+  const handleLogin = (sessionData: UserSession) => {
+    setSession(sessionData);
   };
 
   const handleLogout = () => {
-    setIsAuthenticated(false);
+    setSession(null);
   };
 
   return (
     <>
-      {isAuthenticated ? (
-        <Dashboard onLogout={handleLogout} />
+      {session ? (
+        <Dashboard
+          session={session}
+          onLogout={handleLogout}
+        />
       ) : (
         <Login onLogin={handleLogin} />
       )}

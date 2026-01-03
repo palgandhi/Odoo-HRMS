@@ -1,57 +1,78 @@
 # Dayflow HRMS
 
-Complete Human Resource Management System built on Odoo 17.
+**Enterprise-Grade HR Management System built on Odoo 17 & React.**
 
-## Features
+Dayflow is a modern, headless HRMS that provides a beautiful, high-performance frontend for Odoo's powerful HR backend. It features Role-Based Access Control (RBAC), real-time attendance, leave workflows, and performance reviews.
 
-**Employee Management**
-- Employee records with comprehensive details
-- Employment status tracking
-- Department and position management
+![Status](https://img.shields.io/badge/Status-Production%20Ready-green)
+![Stack](https://img.shields.io/badge/Stack-React%20%7C%20Odoo%20%7C%20Tailwind-blue)
 
-**Attendance System**
-- Check-in/check-out tracking
-- Automatic late detection
-- Overtime calculation
-- Attendance reports
+## 🚀 Features
 
-**Leave Management**
-- Leave applications and approvals
-- Multiple leave types
-- Half-day leave support
-- Leave balance tracking
+### 1. Dashboard
+*   **Real-time Stats:** Overview of company health.
+*   **Activity Feed:** Live updates on HR events.
 
-**Payroll**
-- Attendance-based salary calculation
-- Overtime pay (1.5x rate)
-- Bonuses and deductions
-- Automated payslip generation
+### 2. Employee Directory
+*   **RBAC Protected:**
+    *   **Admins:** View/Edit all employee profiles. Grant system access (create users).
+    *   **Employees:** View only their own personal "Contact Card".
+*   **Onboarding:** Streamlined flow to link Employee Records to Odoo User Accounts.
 
-**Performance Reviews**
-- Multi-criteria performance ratings
-- Goal setting and tracking
-- Employee feedback system
-- Performance analytics
+### 3. Smart Attendance
+*   **Geofenced/IP-restricted Check-in** (Configurable).
+*   **Manager View:** Live status board of who is IN/OUT.
+*   **Employee View:** One-tap Check-in with live duration timer.
+*   **Timezone Aware:** Automatically handles Odoo's UTC storage vs Local Time.
 
-## Installation
+### 4. Leave Management
+*   **Approval Workflow:**
+    *   **Employees:** Submit requests with date ranges and types.
+    *   **Managers:** dedicated "Approvals" queue to Approve/Refuse requests.
+*   **History:** Complete audit log of leave history.
 
-See [INSTALLATION.md](INSTALLATION.md) for detailed setup instructions.
+### 5. Performance Reviews
+*   **Custom Module:** Built on `hr.performance.review`.
+*   **Cycle Management:** Managers create review cycles (Q1, Q2, etc.).
+*   **Grading System:** 5-Star rating system with qualitative feedback.
+*   **Transparency:** Employees view finalized reviews instantly.
 
-Quick start:
-```bash
-# Install dependencies
-pip install -r requirements.txt
+### 6. Payroll Management
+*   **Payslip Generation:** Admins generate slips linked to Employee records.
+*   **Status Tracking:** Track Draft vs Paid status.
+*   **Employee Access:** Secure access for employees to view their own salary history and net pay.
 
-# Run Odoo
-python3 odoo-bin --addons-path=addons,custom_addons -d dayflow_db -i dayflow_hrms
-```
+---
 
-## Tech Stack
+## 🛠️ Technical Architecture
 
-- Odoo 17
-- Python 3.11
-- PostgreSQL
+*   **Frontend:** React 18, TypeScript, TailwindCSS, Lucide Icons, Framer Motion.
+*   **Backend:** Odoo 17 Community (Python).
+*   **Protocol:** JSON-RPC.
+*   **State Management:** Local React State + Odoo Session handling.
 
-## License
+## 📦 Installation
 
-MIT
+See [DEPLOYMENT.md](./DEPLOYMENT.md) for full production deployment instructions.
+
+## 🏃‍♂️ Quick Start (Development)
+
+1.  **Start the Full Stack:**
+    ```bash
+    ./start-full.sh
+    ```
+    This script launches PostgreSQL, Odoo Backend (Port 8069), and React Frontend (Port 5173).
+
+2.  **Access:**
+    *   Frontend: `http://localhost:5173`
+    *   Backend: `http://localhost:8069`
+
+3.  **Credentials:**
+    *   Default Admin: `admin` / `admin`
+
+4.  **Developer Console:**
+    Access the Odoo environment directly for debugging:
+    ```bash
+    ./shell.sh
+    ```
+    *Useful for direct DB queries using Odoo ORM syntax.*

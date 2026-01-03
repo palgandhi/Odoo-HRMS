@@ -3,6 +3,8 @@
  * Connects the React Frontend to the Odoo Backend
  */
 
+export const DB_NAME = "dayflow_db";
+
 // We will use the native fetch API to talk to Odoo's JSON-RPC endpoint
 export const odooCall = async (method: string, params: any = {}) => {
     const payload = {
@@ -25,7 +27,8 @@ export const odooCall = async (method: string, params: any = {}) => {
 
         if (data.error) {
             console.error("Odoo Error:", data.error);
-            throw new Error(data.error.data.message || data.error.message);
+            // Handling session expiration or access denied
+            throw new Error(data.error.data?.message || data.error.message);
         }
 
         return data.result;
@@ -56,6 +59,11 @@ export const executeKw = async (
     return odooCall("call", {
         service: "object",
         method: "execute_kw",
-        args: ["dayflow_db", uid, password, model, operation, args, kwargs]
+        args: [DB_NAME, uid, password, model, operation, args, kwargs]
     });
+};
+
+// Security: Check if user belongs to a specific group (e.g., 'base.group_user')
+export const checkUserGroup = async (uid: number, password: string, groupXmlId: string): Promise<boolean> => {
+    return executeKw(uid, password, 'res.users', 'has_group', [groupXmlId]);
 };

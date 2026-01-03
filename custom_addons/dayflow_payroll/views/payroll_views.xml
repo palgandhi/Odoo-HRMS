@@ -1,0 +1,50 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <record id="view_payroll_slip_tree" model="ir.ui.view">
+        <field name="name">hr.payroll.slip.tree</field>
+        <field name="model">hr.payroll.slip</field>
+        <field name="arch" type="xml">
+            <tree string="Payslips">
+                <field name="name"/>
+                <field name="employee_id"/>
+                <field name="date"/>
+                <field name="net_wage"/>
+                <field name="state" widget="badge" decoration-success="state == 'paid'"/>
+            </tree>
+        </field>
+    </record>
+
+    <record id="view_payroll_slip_form" model="ir.ui.view">
+        <field name="name">hr.payroll.slip.form</field>
+        <field name="model">hr.payroll.slip</field>
+        <field name="arch" type="xml">
+            <form>
+                <header>
+                    <field name="state" widget="statusbar"/>
+                </header>
+                <sheet>
+                    <group>
+                        <field name="name"/>
+                        <field name="employee_id"/>
+                        <field name="date"/>
+                    </group>
+                    <group>
+                        <field name="basic_wage"/>
+                        <field name="allowances"/>
+                        <field name="deductions"/>
+                        <field name="net_wage" readonly="1"/>
+                    </group>
+                </sheet>
+            </form>
+        </field>
+    </record>
+    
+    <record id="action_payroll_slip" model="ir.actions.act_window">
+        <field name="name">Payslips</field>
+        <field name="res_model">hr.payroll.slip</field>
+        <field name="view_mode">tree,form</field>
+    </record>
+
+    <menuitem id="menu_hr_payroll_root" name="Payroll" parent="hr.menu_hr_root" />
+    <menuitem id="menu_hr_payroll_slip" name="Payslips" parent="menu_hr_payroll_root" action="action_payroll_slip"/>
+</odoo>
