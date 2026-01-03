@@ -1,0 +1,109 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <!-- Leave Form View Extension -->
+    <record id="view_leave_form_extended" model="ir.ui.view">
+        <field name="name">hr.leave.form.extended</field>
+        <field name="model">hr.leave</field>
+        <field name="inherit_id" ref="hr_holidays.hr_leave_view_form"/>
+        <field name="arch" type="xml">
+            <field name="name" position="after">
+                <field name="leave_reason" required="1"/>
+                <field name="is_emergency"/>
+                <field name="is_half_day"/>
+                <field name="half_day_period" attrs="{'invisible': [('is_half_day', '=', False)], 'required': [('is_half_day', '=', True)]}"/>
+                <field name="attachment_ids" widget="many2many_binary"/>
+            </field>
+            <xpath expr="//sheet" position="inside">
+                <group string="Approval Information" attrs="{'invisible': [('state', 'in', ['draft', 'confirm'])]}">
+                    <group>
+                        <field name="approved_by" readonly="1"/>
+                        <field name="approved_date" readonly="1"/>
+                    </group>
+                    <group>
+                        <field name="rejected_by" readonly="1"/>
+                        <field name="rejected_date" readonly="1"/>
+                        <field name="rejection_reason" readonly="1"/>
+                    </group>
+                </group>
+            </xpath>
+        </field>
+    </record>
+
+    <!-- Leave Report Form View -->
+    <record id="view_leave_report_form" model="ir.ui.view">
+        <field name="name">hr.leave.report.form</field>
+        <field name="model">hr.leave.report</field>
+        <field name="arch" type="xml">
+            <form string="Leave Report">
+                <sheet>
+                    <group>
+                        <group>
+                            <field name="name"/>
+                            <field name="date_from"/>
+                            <field name="date_to"/>
+                        </group>
+                        <group>
+                            <field name="employee_id"/>
+                            <field name="department_id"/>
+                            <field name="leave_type_id"/>
+                        </group>
+                    </group>
+                    <group string="Report Summary">
+                        <group>
+                            <field name="total_leaves"/>
+                            <field name="approved_leaves"/>
+                            <field name="pending_leaves"/>
+                        </group>
+                        <group>
+                            <field name="rejected_leaves"/>
+                            <field name="total_days"/>
+                        </group>
+                    </group>
+                </sheet>
+            </form>
+        </field>
+    </record>
+
+    <!-- Leave Report Tree View -->
+    <record id="view_leave_report_tree" model="ir.ui.view">
+        <field name="name">hr.leave.report.tree</field>
+        <field name="model">hr.leave.report</field>
+        <field name="arch" type="xml">
+            <tree string="Leave Reports">
+                <field name="name"/>
+                <field name="date_from"/>
+                <field name="date_to"/>
+                <field name="employee_id"/>
+                <field name="total_leaves"/>
+                <field name="approved_leaves"/>
+                <field name="total_days"/>
+            </tree>
+        </field>
+    </record>
+
+    <!-- Leave Report Action -->
+    <record id="action_leave_report" model="ir.actions.act_window">
+        <field name="name">Leave Reports</field>
+        <field name="res_model">hr.leave.report</field>
+        <field name="view_mode">tree,form</field>
+    </record>
+
+    <!-- Menu Items -->
+    <menuitem id="menu_leave_requests"
+              name="Leave Requests"
+              parent="menu_dayflow_leave"
+              action="hr_holidays.hr_leave_action_my"
+              sequence="10"/>
+
+    <menuitem id="menu_leave_allocations"
+              name="Leave Allocations"
+              parent="menu_dayflow_leave"
+              action="hr_holidays.hr_leave_allocation_action_all"
+              sequence="20"/>
+
+    <menuitem id="menu_leave_reports"
+              name="Leave Reports"
+              parent="menu_dayflow_leave"
+              action="action_leave_report"
+              sequence="30"/>
+</odoo>

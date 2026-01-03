@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <data noupdate="1">
+        <!-- Demo Employees will be created by Odoo's default HR module -->
+        <!-- This file can be used for additional demo data if needed -->
+    </data>
+</odoo>

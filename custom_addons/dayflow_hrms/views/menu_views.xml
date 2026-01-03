@@ -1,0 +1,51 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <!-- Main Menu -->
+    <menuitem id="menu_dayflow_hrms_root"
+              name="Dayflow HRMS"
+              sequence="10"
+              web_icon="dayflow_hrms,static/description/icon.png"/>
+
+    <!-- Employee Management -->
+    <menuitem id="menu_dayflow_employee"
+              name="Employees"
+              parent="menu_dayflow_hrms_root"
+              sequence="10"/>
+
+    <!-- Attendance -->
+    <menuitem id="menu_dayflow_attendance"
+              name="Attendance"
+              parent="menu_dayflow_hrms_root"
+              sequence="20"/>
+
+    <!-- Leave Management -->
+    <menuitem id="menu_dayflow_leave"
+              name="Leave Management"
+              parent="menu_dayflow_hrms_root"
+              sequence="30"/>
+
+    <!-- Payroll -->
+    <menuitem id="menu_dayflow_payroll"
+              name="Payroll"
+              parent="menu_dayflow_hrms_root"
+              sequence="40"/>
+
+    <!-- Performance -->
+    <menuitem id="menu_dayflow_performance"
+              name="Performance"
+              parent="menu_dayflow_hrms_root"
+              sequence="50"/>
+
+    <!-- Reports -->
+    <menuitem id="menu_dayflow_reports"
+              name="Reports"
+              parent="menu_dayflow_hrms_root"
+              sequence="60"/>
+
+    <!-- Configuration -->
+    <menuitem id="menu_dayflow_configuration"
+              name="Configuration"
+              parent="menu_dayflow_hrms_root"
+              sequence="100"
+              groups="hr.group_hr_manager"/>
+</odoo>

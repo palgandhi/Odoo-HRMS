@@ -1,0 +1,290 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <!-- Performance Review Form View -->
+    <record id="view_performance_review_form" model="ir.ui.view">
+        <field name="name">hr.performance.review.form</field>
+        <field name="model">hr.performance.review</field>
+        <field name="arch" type="xml">
+            <form string="Performance Review">
+                <header>
+                    <button name="action_submit" string="Submit" type="object" 
+                            states="draft" class="btn-primary"/>
+                    <button name="action_review" string="Mark as Reviewed" type="object" 
+                            states="submitted" class="btn-primary" groups="hr.group_hr_manager"/>
+                    <button name="action_acknowledge" string="Acknowledge" type="object" 
+                            states="reviewed" class="btn-primary"/>
+                    <button name="action_cancel" string="Cancel" type="object" 
+                            states="draft,submitted"/>
+                    <button name="action_reset_to_draft" string="Reset to Draft" type="object" 
+                            states="cancelled" groups="hr.group_hr_manager"/>
+                    <field name="state" widget="statusbar" 
+                           statusbar_visible="draft,submitted,reviewed,acknowledged"/>
+                </header>
+                <sheet>
+                    <div class="oe_title">
+                        <h1>
+                            <field name="name" placeholder="e.g. Q1 2026 Performance Review"/>
+                        </h1>
+                    </div>
+                    <group>
+                        <group>
+                            <field name="employee_id"/>
+                            <field name="reviewer_id"/>
+                            <field name="review_period"/>
+                        </group>
+                        <group>
+                            <field name="review_date"/>
+                            <field name="date_from"/>
+                            <field name="date_to"/>
+                            <field name="next_review_date"/>
+                        </group>
+                    </group>
+                    
+                    <notebook>
+                        <page string="Performance Ratings" name="ratings">
+                            <group>
+                                <group string="Work Quality">
+                                    <field name="quality_of_work" widget="radio"/>
+                                    <field name="productivity" widget="radio"/>
+                                </group>
+                                <group string="Soft Skills">
+                                    <field name="communication" widget="radio"/>
+                                    <field name="teamwork" widget="radio"/>
+                                </group>
+                            </group>
+                            <group>
+                                <group string="Professional Attributes">
+                                    <field name="initiative" widget="radio"/>
+                                    <field name="punctuality" widget="radio"/>
+                                </group>
+                                <group string="Overall Assessment">
+                                    <field name="overall_rating" widget="gauge" 
+                                           options="{'max_field': '5'}"/>
+                                    <field name="rating_category" readonly="1"/>
+                                </group>
+                            </group>
+                        </page>
+                        
+                        <page string="Goals" name="goals">
+                            <field name="goals_ids">
+                                <tree editable="bottom">
+                                    <field name="name"/>
+                                    <field name="description"/>
+                                    <field name="target_date"/>
+                                    <field name="priority"/>
+                                    <field name="progress" widget="progressbar"/>
+                                    <field name="status"/>
+                                </tree>
+                            </field>
+                        </page>
+                        
+                        <page string="Feedback" name="feedback">
+                            <group>
+                                <field name="achievements" widget="text" 
+                                       placeholder="List key achievements during this period..."/>
+                                <field name="areas_of_improvement" widget="text" 
+                                       placeholder="Areas that need improvement..."/>
+                                <field name="training_needs" widget="text" 
+                                       placeholder="Recommended training or development areas..."/>
+                            </group>
+                        </page>
+                        
+                        <page string="Comments" name="comments">
+                            <group>
+                                <field name="reviewer_comments" widget="text" 
+                                       placeholder="Reviewer's comments..."/>
+                                <field name="employee_comments" widget="text" 
+                                       placeholder="Employee's response..."/>
+                            </group>
+                        </page>
+                    </notebook>
+                </sheet>
+                <div class="oe_chatter">
+                    <field name="message_follower_ids"/>
+                    <field name="activity_ids"/>
+                    <field name="message_ids"/>
+                </div>
+            </form>
+        </field>
+    </record>
+
+    <!-- Performance Review Tree View -->
+    <record id="view_performance_review_tree" model="ir.ui.view">
+        <field name="name">hr.performance.review.tree</field>
+        <field name="model">hr.performance.review</field>
+        <field name="arch" type="xml">
+            <tree string="Performance Reviews" 
+                  decoration-info="state == 'draft'"
+                  decoration-warning="state == 'submitted'"
+                  decoration-success="state == 'acknowledged'">
+                <field name="name"/>
+                <field name="employee_id"/>
+                <field name="reviewer_id"/>
+                <field name="review_period"/>
+                <field name="review_date"/>
+                <field name="overall_rating" widget="badge"/>
+                <field name="rating_category" decoration-success="rating_category == 'excellent'" 
+                       decoration-info="rating_category == 'good'"
+                       decoration-warning="rating_category == 'average'"
+                       decoration-danger="rating_category == 'poor'"/>
+                <field name="state"/>
+            </tree>
+        </field>
+    </record>
+
+    <!-- Performance Review Kanban View -->
+    <record id="view_performance_review_kanban" model="ir.ui.view">
+        <field name="name">hr.performance.review.kanban</field>
+        <field name="model">hr.performance.review</field>
+        <field name="arch" type="xml">
+            <kanban class="o_kanban_mobile">
+                <field name="name"/>
+                <field name="employee_id"/>
+                <field name="review_date"/>
+                <field name="overall_rating"/>
+                <field name="rating_category"/>
+                <field name="state"/>
+                <templates>
+                    <t t-name="kanban-box">
+                        <div class="oe_kanban_global_click">
+                            <div class="o_kanban_record_top">
+                                <div class="o_kanban_record_headings">
+                                    <strong class="o_kanban_record_title"><field name="name"/></strong>
+                                    <div class="o_kanban_record_subtitle">
+                                        <field name="employee_id"/> - <field name="review_date"/>
+                                    </div>
+                                </div>
+                                <span class="float-end badge badge-pill">
+                                    <field name="state"/>
+                                </span>
+                            </div>
+                            <div class="o_kanban_record_bottom">
+                                <div class="oe_kanban_bottom_left">
+                                    Rating: <field name="overall_rating"/> / 5.0
+                                </div>
+                                <div class="oe_kanban_bottom_right">
+                                    <field name="rating_category" widget="label"/>
+                                </div>
+                            </div>
+                        </div>
+                    </t>
+                </templates>
+            </kanban>
+        </field>
+    </record>
+
+    <!-- Performance Goal Form View -->
+    <record id="view_performance_goal_form" model="ir.ui.view">
+        <field name="name">hr.performance.goal.form</field>
+        <field name="model">hr.performance.goal</field>
+        <field name="arch" type="xml">
+            <form string="Performance Goal">
+                <header>
+                    <button name="action_mark_completed" string="Mark as Completed" 
+                            type="object" class="btn-primary"
+                            attrs="{'invisible': [('status', '=', 'completed')]}"/>
+                    <field name="status" widget="statusbar"/>
+                </header>
+                <sheet>
+                    <group>
+                        <group>
+                            <field name="employee_id"/>
+                            <field name="name"/>
+                            <field name="priority"/>
+                        </group>
+                        <group>
+                            <field name="target_date"/>
+                            <field name="completion_date" readonly="1"/>
+                            <field name="progress" widget="progressbar"/>
+                        </group>
+                    </group>
+                    <group>
+                        <field name="description" widget="text"/>
+                        <field name="achievement_notes" widget="text"/>
+                    </group>
+                </sheet>
+            </form>
+        </field>
+    </record>
+
+    <!-- Performance Report Form View -->
+    <record id="view_performance_report_form" model="ir.ui.view">
+        <field name="name">hr.performance.report.form</field>
+        <field name="model">hr.performance.report</field>
+        <field name="arch" type="xml">
+            <form string="Performance Report">
+                <sheet>
+                    <group>
+                        <group>
+                            <field name="name"/>
+                            <field name="date_from"/>
+                            <field name="date_to"/>
+                        </group>
+                        <group>
+                            <field name="department_id"/>
+                            <field name="date"/>
+                        </group>
+                    </group>
+                    <group string="Report Summary">
+                        <group>
+                            <field name="total_reviews"/>
+                            <field name="average_rating"/>
+                        </group>
+                        <group>
+                            <field name="excellent_count"/>
+                            <field name="good_count"/>
+                            <field name="average_count"/>
+                            <field name="poor_count"/>
+                        </group>
+                    </group>
+                </sheet>
+            </form>
+        </field>
+    </record>
+
+    <!-- Performance Review Action -->
+    <record id="action_performance_review" model="ir.actions.act_window">
+        <field name="name">Performance Reviews</field>
+        <field name="res_model">hr.performance.review</field>
+        <field name="view_mode">tree,kanban,form</field>
+        <field name="context">{}</field>
+        <field name="help" type="html">
+            <p class="o_view_nocontent_smiling_face">
+                Create a new performance review
+            </p>
+        </field>
+    </record>
+
+    <!-- Performance Goal Action -->
+    <record id="action_performance_goal" model="ir.actions.act_window">
+        <field name="name">Performance Goals</field>
+        <field name="res_model">hr.performance.goal</field>
+        <field name="view_mode">tree,form</field>
+    </record>
+
+    <!-- Performance Report Action -->
+    <record id="action_performance_report" model="ir.actions.act_window">
+        <field name="name">Performance Reports</field>
+        <field name="res_model">hr.performance.report</field>
+        <field name="view_mode">tree,form</field>
+    </record>
+
+    <!-- Menu Items -->
+    <menuitem id="menu_performance_reviews"
+              name="Performance Reviews"
+              parent="menu_dayflow_performance"
+              action="action_performance_review"
+              sequence="10"/>
+
+    <menuitem id="menu_performance_goals"
+              name="Goals"
+              parent="menu_dayflow_performance"
+              action="action_performance_goal"
+              sequence="20"/>
+
+    <menuitem id="menu_performance_reports"
+              name="Performance Reports"
+              parent="menu_dayflow_performance"
+              action="action_performance_report"
+              sequence="30"/>
+</odoo>

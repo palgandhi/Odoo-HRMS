@@ -1,0 +1,134 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <!-- Payslip Form View Extension -->
+    <record id="view_payslip_form_extended" model="ir.ui.view">
+        <field name="name">hr.payslip.form.extended</field>
+        <field name="model">hr.payslip</field>
+        <field name="inherit_id" ref="hr_payroll.view_hr_payslip_form"/>
+        <field name="arch" type="xml">
+            <xpath expr="//page[@name='other_info']" position="after">
+                <page string="Salary Breakdown" name="salary_breakdown">
+                    <group>
+                        <group string="Attendance & Overtime">
+                            <field name="attendance_days"/>
+                            <field name="overtime_hours"/>
+                        </group>
+                        <group string="Additions">
+                            <field name="bonus_amount"/>
+                            <field name="performance_bonus"/>
+                            <field name="other_allowances"/>
+                        </group>
+                    </group>
+                    <group>
+                        <group string="Deductions">
+                            <field name="late_deduction"/>
+                            <field name="other_deductions"/>
+                        </group>
+                        <group string="Summary">
+                            <field name="gross_salary" widget="monetary"/>
+                            <field name="total_deductions" widget="monetary"/>
+                            <field name="net_salary" widget="monetary"/>
+                        </group>
+                    </group>
+                </page>
+                <page string="Payment Details" name="payment_details">
+                    <group>
+                        <group>
+                            <field name="payment_status"/>
+                            <field name="payment_date"/>
+                            <field name="payment_reference"/>
+                        </group>
+                    </group>
+                    <footer>
+                        <button name="action_mark_paid" string="Mark as Paid" 
+                                type="object" class="btn-primary"
+                                attrs="{'invisible': [('payment_status', '=', 'paid')]}"/>
+                    </footer>
+                </page>
+            </xpath>
+        </field>
+    </record>
+
+    <!-- Payslip Tree View Extension -->
+    <record id="view_payslip_tree_extended" model="ir.ui.view">
+        <field name="name">hr.payslip.tree.extended</field>
+        <field name="model">hr.payslip</field>
+        <field name="inherit_id" ref="hr_payroll.view_hr_payslip_tree"/>
+        <field name="arch" type="xml">
+            <field name="name" position="after">
+                <field name="gross_salary" sum="Total Gross"/>
+                <field name="net_salary" sum="Total Net"/>
+                <field name="payment_status"/>
+            </field>
+        </field>
+    </record>
+
+    <!-- Payroll Report Form View -->
+    <record id="view_payroll_report_form" model="ir.ui.view">
+        <field name="name">hr.payroll.report.form</field>
+        <field name="model">hr.payroll.report</field>
+        <field name="arch" type="xml">
+            <form string="Payroll Report">
+                <sheet>
+                    <group>
+                        <group>
+                            <field name="name"/>
+                            <field name="date_from"/>
+                            <field name="date_to"/>
+                        </group>
+                        <group>
+                            <field name="department_id"/>
+                            <field name="date"/>
+                        </group>
+                    </group>
+                    <group string="Report Summary">
+                        <group>
+                            <field name="total_employees"/>
+                            <field name="total_gross" widget="monetary"/>
+                        </group>
+                        <group>
+                            <field name="total_deductions" widget="monetary"/>
+                            <field name="total_net" widget="monetary"/>
+                        </group>
+                    </group>
+                </sheet>
+            </form>
+        </field>
+    </record>
+
+    <!-- Payroll Report Tree View -->
+    <record id="view_payroll_report_tree" model="ir.ui.view">
+        <field name="name">hr.payroll.report.tree</field>
+        <field name="model">hr.payroll.report</field>
+        <field name="arch" type="xml">
+            <tree string="Payroll Reports">
+                <field name="name"/>
+                <field name="date_from"/>
+                <field name="date_to"/>
+                <field name="total_employees"/>
+                <field name="total_gross" sum="Total Gross"/>
+                <field name="total_net" sum="Total Net"/>
+            </tree>
+        </field>
+    </record>
+
+    <!-- Payroll Report Action -->
+    <record id="action_payroll_report" model="ir.actions.act_window">
+        <field name="name">Payroll Reports</field>
+        <field name="res_model">hr.payroll.report</field>
+        <field name="view_mode">tree,form</field>
+    </record>
+
+    <!-- Menu Items -->
+    <menuitem id="menu_payslips"
+              name="Payslips"
+              parent="menu_dayflow_payroll"
+              action="hr_payroll.action_view_hr_payslip_form"
+              sequence="10"/>
+
+    <menuitem id="menu_payroll_reports"
+              name="Payroll Reports"
+              parent="menu_dayflow_payroll"
+              action="action_payroll_report"
+              sequence="20"/>
+</odoo>

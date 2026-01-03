@@ -1,0 +1,108 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <!-- Attendance Form View Extension -->
+    <record id="view_attendance_form_extended" model="ir.ui.view">
+        <field name="name">hr.attendance.form.extended</field>
+        <field name="model">hr.attendance</field>
+        <field name="inherit_id" ref="hr_attendance.view_attendance_form"/>
+        <field name="arch" type="xml">
+            <field name="worked_hours" position="after">
+                <field name="attendance_status"/>
+                <field name="late_minutes"/>
+                <field name="overtime_hours"/>
+                <field name="work_location"/>
+                <field name="remarks"/>
+            </field>
+        </field>
+    </record>
+
+    <!-- Attendance Tree View Extension -->
+    <record id="view_attendance_tree_extended" model="ir.ui.view">
+        <field name="name">hr.attendance.tree.extended</field>
+        <field name="model">hr.attendance</field>
+        <field name="inherit_id" ref="hr_attendance.view_attendance_tree"/>
+        <field name="arch" type="xml">
+            <field name="worked_hours" position="after">
+                <field name="attendance_status" decoration-success="attendance_status == 'present'" 
+                       decoration-warning="attendance_status == 'late'" 
+                       decoration-danger="attendance_status == 'absent'"/>
+                <field name="late_minutes"/>
+                <field name="overtime_hours"/>
+            </field>
+        </field>
+    </record>
+
+    <!-- Attendance Report Form View -->
+    <record id="view_attendance_report_form" model="ir.ui.view">
+        <field name="name">hr.attendance.report.form</field>
+        <field name="model">hr.attendance.report</field>
+        <field name="arch" type="xml">
+            <form string="Attendance Report">
+                <sheet>
+                    <group>
+                        <group>
+                            <field name="name"/>
+                            <field name="date_from"/>
+                            <field name="date_to"/>
+                        </group>
+                        <group>
+                            <field name="employee_id"/>
+                            <field name="department_id"/>
+                            <field name="date"/>
+                        </group>
+                    </group>
+                    <group string="Report Summary">
+                        <group>
+                            <field name="total_days"/>
+                            <field name="present_days"/>
+                            <field name="absent_days"/>
+                        </group>
+                        <group>
+                            <field name="late_days"/>
+                            <field name="total_hours"/>
+                            <field name="overtime_hours"/>
+                        </group>
+                    </group>
+                </sheet>
+            </form>
+        </field>
+    </record>
+
+    <!-- Attendance Report Tree View -->
+    <record id="view_attendance_report_tree" model="ir.ui.view">
+        <field name="name">hr.attendance.report.tree</field>
+        <field name="model">hr.attendance.report</field>
+        <field name="arch" type="xml">
+            <tree string="Attendance Reports">
+                <field name="name"/>
+                <field name="date_from"/>
+                <field name="date_to"/>
+                <field name="employee_id"/>
+                <field name="department_id"/>
+                <field name="present_days"/>
+                <field name="absent_days"/>
+                <field name="total_hours"/>
+            </tree>
+        </field>
+    </record>
+
+    <!-- Attendance Report Action -->
+    <record id="action_attendance_report" model="ir.actions.act_window">
+        <field name="name">Attendance Reports</field>
+        <field name="res_model">hr.attendance.report</field>
+        <field name="view_mode">tree,form</field>
+    </record>
+
+    <!-- Menu Items -->
+    <menuitem id="menu_attendance_tracking"
+              name="Attendance Tracking"
+              parent="menu_dayflow_attendance"
+              action="hr_attendance.hr_attendance_action"
+              sequence="10"/>
+
+    <menuitem id="menu_attendance_reports"
+              name="Attendance Reports"
+              parent="menu_dayflow_attendance"
+              action="action_attendance_report"
+              sequence="20"/>
+</odoo>
